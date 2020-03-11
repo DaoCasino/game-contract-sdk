@@ -1,0 +1,4 @@
+[submodule "libs/platform-contracts"]
+	path = libs/platform-contracts
+	url = https://github.com/DaoCasino/platform-contracts
+	branch = develop
