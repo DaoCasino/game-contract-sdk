@@ -23,21 +23,7 @@ else()
 endif()
 
 
-message(STATUS "Building game contracts sdk lib ${VERSION_FULL}")
-
-ExternalProject_Add(
-    game_contract_sdk
-    SOURCE_DIR ${CMAKE_SOURCE_DIR}/sdk
-    BINARY_DIR ${CMAKE_BINARY_DIR}/sdk
-    CMAKE_ARGS
-        -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
-        -DSDK_VERSION=${VERSION_FULL}
-    PATCH_COMMAND ""
-    TEST_COMMAND ""
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS 1
-)
-
+#TODO examples build
 
 if (APPLE)
     set(OPENSSL_ROOT "/usr/local/opt/openssl")

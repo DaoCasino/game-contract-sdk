@@ -7,6 +7,8 @@
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 
+#include <game-contract-sdk/rsa.hpp>
+
 
 namespace game_sdk {
 
@@ -34,7 +36,7 @@ public:
     /* global state variables */
     struct [[eosio::table("global")]] global_row {
         uint64_t session_seq { 0u };
-        name platform_addr;
+        name platform;
         name beneficiar;
     };
     using global_singleton = eosio::singleton<"global"_n, global_row>;
@@ -60,19 +62,15 @@ public:
         deposits(_self, _self.value)
     { }
 
-
-    template <typename T>
-    T get_action() {
-        return eosio::unpack_action_data<T>();
-    }
+public:
+    const global_row& get_global() const;
+    const session_row& get_session(uint64_t req_id) const;
 
     void require_random(uint64_t req_id); // require random generation
     void require_action(uint64_t req_id, uint8_t action_type); // require game action from player
     void finish_game(uint64_t req_id, bool player_win); // finish game
-    void fail_game(uint64_t req_id); //fail game
 
     virtual void on_init() { /* do nothing by default */ }; // optianal
-
     virtual void on_new_game(uint64_t req_id) = 0; // must be overrided
     virtual void on_action(uint64_t req_id, game_action_type action) = 0; // must be overrided
     virtual void on_random(uint64_t req_id, uint256_t rand) = 0; // must be overrided
@@ -81,6 +79,14 @@ public:
 //    virtual void on_signidice_part_2(/*TODO*/) { /* do nothing by default */ }; // optional
 
 public:
+    const global_row& get_global() const {
+        return global.get_or_default();
+    }
+
+    const session_row& get_session(uint64_t req_id) const {
+        return sessions.get(req_id);
+    }
+
     void require_action(uint64_t req_id, uint8_t action_type) {
         eosio::check(action_type < std::variant_size<game_action_type>::value, "invalid action type");
 
@@ -119,6 +125,7 @@ public:
         sessions.erase(req_id);
     }
 
+
     [[eosio::on_notify("eosio.token::transfer")]]
     void on_transfer(name from, name to, asset quantity, std::string memo) final {
         if (to != get_self()) {
@@ -151,7 +158,8 @@ public:
             });
         }
     }
-/*
+
+/* TODO session TTL
     [[eosio::action("refund")]]
     void refund(uint64_t sender, uint64_t req_id) final {
         require_auth(sender);
@@ -204,10 +212,19 @@ public:
 
     [[eosio::action("init")]]
     void init(name platform, name beneficiar) {
-        auto global.
+        require_auth(get_self());
+        eosio::check(eosio::is_account(platform), "platform account doesn't exists");
+        eosio::check(eosio::is_account(beneficiar), "beneficiar account doesn't exists");
+
+        auto gl = global.get_or_default();
+        gl.beneficiar = beneficiar;
+        gl.platform = platform;
+        global.set(gl);
+
+        on_init();
     }
 
-protected:
+private:
     global_singleton global;
     session_table sessions;
 
@@ -220,12 +237,6 @@ private:
     uint64_t get_req_id(const std::string& str) {
         return std::stoul(str);
     }
-}
-
-extern "C" {
-
-void apply()
-
 }
 
 } // namespace game_base
