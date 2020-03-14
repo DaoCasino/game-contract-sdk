@@ -16,8 +16,3 @@ void simple::on_random(uint64_t ses_id, checksum256 rand) {
 
 } // namespace simple
 
-extern "C" {
-void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-    eosio::check(false, "dawdw");
-}
-}
