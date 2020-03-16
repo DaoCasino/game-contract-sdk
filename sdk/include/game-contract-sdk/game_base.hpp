@@ -29,6 +29,7 @@ using bytes = std::vector<char>;
 using eosio::checksum256;
 using eosio::time_point;
 using eosio::require_auth;
+using casino::game_params_type;
 
 
 class game: public eosio::contract {
@@ -102,8 +103,9 @@ public:
         uint64_t ses_seq;
         name player;
         uint8_t state;
-        asset deposit;
-        checksum256 digest; // <- signidice result, set seed value on init
+        game_params_type params; // <- game params, copied from casino contract aboid of params changing while active session
+        asset deposit; // <- current player deposit amount, increments when new deposit received
+        checksum256 digest; // <- signidice result, set seed value on new_game
         time_point last_update; // <-- last action time
 
         uint64_t primary_key() const { return req_id; }
@@ -252,9 +254,16 @@ public:
         eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't listed in platform");
         eosio::check(!is_expired(req_id), "session expired");
 
+        auto casino_addr = platform::read::get_casino(get_platform(), casino_id).contract;
+        casino::game_table casino_games(casino_addr, casino_addr.value);
+        auto game_params = casino_games.get(get_self_id(), "game isn't listed in casino").params;
+        auto init_digest = calc_seed(req_id);
+
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
+            obj.digest = init_digest;
+            obj.params = game_params;
         });
 
         on_new_game(req_id);
@@ -400,6 +409,17 @@ private:
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         const auto gl = global.get_or_default();
         return eosio::current_time_point().sec_since_epoch() - session_itr->last_update.sec_since_epoch() > gl.session_ttl;
+    }
+
+    checksum256 calc_seed(uint64_t req_id) {
+        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
+        std::array<uint64_t, 4> values {
+            get_self_id(),
+            session_itr->casino_id,
+            session_itr->ses_seq,
+            session_itr->player.value
+        };
+        return checksum256(values);
     }
 };
 
