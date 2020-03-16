@@ -34,6 +34,9 @@ using eosio::checksum256;
 class game: public eosio::contract {
 public:
     using eosio::contract::contract;
+    constexpr name player_game_permission = "game"_n;
+    constexpr name platform_signidice_permission = "signidice"_n;
+    constexpr name casino_signidice_permission = "signidice"_n;
 
     enum class state : uint8_t {
         req_deposit = 0,        // <- init|req_signidice_part_2, -> req_start|req_action
@@ -130,7 +133,7 @@ public:
     /* game sesion state changers */
     void require_action(uint64_t req_id, uint8_t action_type) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player); //TODO platform permission
+        require_auth({session_itr->player, player_game_permission});
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start) ||
                      session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
         "state should be 'req_start' or 'req_signidice_part_2'");
@@ -144,7 +147,7 @@ public:
 
     void require_random(uint64_t req_id) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player); //TODO platform permission
+        require_auth({session_itr->player, player_game_permission});
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action), "state should be 'req_action'");
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
@@ -156,7 +159,7 @@ public:
 
     void finish_game(uint64_t req_id, bool player_win) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player); //TODO platform permission
+        require_auth({session_itr->player, player_game_permission});
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2) ||
                      session_itr->state == static_cast<uint8_t>(state::req_action),
         "state should be 'req_signidice_part_2' or 'req_action'");
@@ -254,7 +257,7 @@ public:
     GAME_ACTION(newgame)
     void new_game(uint64_t req_id, uint64_t casino_id) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player);
+        require_auth({session_itr->player, player_game_permission});
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start), "state should be 'req_start'");
         eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't listed in platform");
 
@@ -270,7 +273,7 @@ public:
     GAME_ACTION(gameaction)
     void game_action(uint64_t req_id, uint16_t type, std::vector<uint32_t> params) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player); //TODO platform permission
+        require_auth({session_itr->player, player_game_permission});
 
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action) ||
                      session_itr->state == static_cast<uint8_t>(state::req_deposit),
@@ -285,7 +288,7 @@ public:
 
     GAME_ACTION(sgdicefirst)
     void signidice_part_1(uint64_t req_id, const std::string& sign) {
-        require_auth(get_platform()); //TODO special permission check
+        require_auth({get_platform(), platform_signidice_permission});
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
 
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_1),
@@ -305,7 +308,8 @@ public:
     GAME_ACTION(sgdicesecond)
     void signidice_part_2(uint64_t req_id, const std::string& sign) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(platform::read::get_casino(get_platform(), session_itr->casino_id).contract); //TODO special permission check
+        const auto casino_addr = platform::read::get_casino(get_platform(), session_itr->casino_id).contract;
+        require_auth({casino_addr, casino_signidice_permission});
 
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
         "state should be 'req_deposit' or 'req_action'");
@@ -343,7 +347,6 @@ private:
     template <typename Event>
     void emit_event(uint64_t req_id, event_type type, const Event& event) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth(session_itr->player); //TODO platform permission
 
         auto data_bytes = eosio::pack<Event>(event);
 
