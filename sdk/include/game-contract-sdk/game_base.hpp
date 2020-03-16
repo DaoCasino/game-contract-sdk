@@ -31,7 +31,6 @@ using bytes = std::vector<char>;
 using eosio::checksum256;
 
 
-//template <typename GameActions>
 class game: public eosio::contract {
 public:
     using eosio::contract::contract;
@@ -43,7 +42,6 @@ public:
         req_signidice_part_1,   // <- req_action, -> req_signidice_part_2|falied
         req_signidice_part_2,   // <- req_signidice_part_1, -> finished|req_deposit|req_action|failed
         finished,               // <- req_signidice_part_2
-        failed                  // <- req_start|req_action|req_signidice_part_1|req_signidice_part_2
     };
 
     enum class event_type : uint32_t {
@@ -110,7 +108,6 @@ public:
         sessions(_self, _self.value)
     { }
 
-public:
     /* onlinal contract initialization callback */
     virtual void on_init() { /* do nothing by default */ }; // optional
 
@@ -132,8 +129,6 @@ public:
 
     /* game sesion state changers */
     void require_action(uint64_t req_id, uint8_t action_type) {
-//        eosio::check(action_type < std::variant_size<GameActions>>::value, "invalid action type");
-
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         require_auth(session_itr->player); //TODO platform permission
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start) ||
@@ -257,9 +252,6 @@ public:
     }
 */
     GAME_ACTION(newgame)
-//#ifndef NOABI
-//    [[eosio::action("newgame"), eosio::contract("game")]]
-//#endif
     void new_game(uint64_t req_id, uint64_t casino_id) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         require_auth(session_itr->player);
@@ -375,8 +367,7 @@ private:
     }
 
     uint64_t get_self_id() {
-        return 0;
-//        return platform::read::get_game(get_platform(), get_self()).id;
+        return platform::read::get_game(get_platform(), get_self()).id;
     }
 
     name get_platform() {
@@ -390,30 +381,69 @@ private:
     }
 };
 
-} // namespace game_base
 
-#define GAME_ABI( TYPE ) \
+template<typename T, typename... Args>
+bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args...)) {
+    using namespace eosio;
+    size_t size = action_data_size();
+
+    //using malloc/free here potentially is not exception-safe, although WASM doesn't support exceptions
+    constexpr size_t max_stack_buffer_size = 512;
+    void* buffer = nullptr;
+    if( size > 0 ) {
+        buffer = max_stack_buffer_size < size ? malloc(size) : alloca(size);
+        read_action_data( buffer, size );
+    }
+
+    std::tuple<std::decay_t<Args>...> args;
+    datastream<const char*> ds((char*)buffer, size);
+    ds >> args;
+
+    T inst(self, code, ds);
+
+    auto f2 = [&]( auto... a ){
+        ((&inst)->*func)( a... );
+    };
+
+    boost::mp11::tuple_apply( f2, args );
+    if ( max_stack_buffer_size < size ) {
+        free(buffer);
+    }
+    return true;
+}
+
+} // namespace game_sdk
+
+
+#define GAME_CONTRACT( TYPE ) \
 extern "C" { \
-void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
-    auto self = receiver; \
-    if( action == eosio::name("onerror").value) { \
-        /* onerror is only valid if it is for the "eosio" code account and authorized by "eosio"'s "active permission */ \
-        eosio::check(code == eosio::name("eosio").value, "onerror action's are only valid from the \"eosio\" system account"); \
-    } \
-    if( code == self || action == eosio::name("onerror").value ) { \
-        TYPE thiscontract( eosio::name(self) ); \
-        switch( action ) { \
-            case eosio::name("gameaction").value: \
-                break; \
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) { \
+        if (code == "eosio.token"_n.value && action == "transfer"_n.value) { \
+            game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), \
+                              &TYPE::on_transfer); \
         } \
+        else if (code == receiver) { \
+            switch (action) { \
+                case "init"_n.value: \
+                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::init); \
+                    break; \
+                case "newgame"_n.value: \
+                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game); \
+                    break; \
+                case "gameaction"_n.value: \
+                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action); \
+                    break; \
+                case "sgdicefirst"_n.value: \
+                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_1); \
+                    break; \
+                case "sgdicesecond"_n.value: \
+                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_2); \
+                    break; \
+                default: \
+                    eosio::eosio_exit(1); \
+            } \
+        } \
+        eosio::eosio_exit(0); \
     } \
-} \
-} \
-
-
-
-extern "C" {
-void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-    eosio::check(false, "dawdw");
 }
-}
+

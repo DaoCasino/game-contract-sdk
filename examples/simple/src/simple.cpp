@@ -16,3 +16,4 @@ void simple::on_random(uint64_t ses_id, checksum256 rand) {
 
 } // namespace simple
 
+GAME_CONTRACT(simple::simple)
