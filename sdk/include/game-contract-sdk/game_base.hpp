@@ -196,6 +196,7 @@ public:
         }
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
+            obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::finished);
         });
 
@@ -225,6 +226,7 @@ public:
                 row.ses_seq = gl.session_seq++;
                 row.player = from;
                 row.deposit = quantity;
+                row.last_update = eosio::current_time_point();
                 row.state = static_cast<uint8_t>(state::req_start);
             });
             global.set(gl, get_self());
@@ -235,6 +237,7 @@ public:
             eosio::check(!is_expired(req_id), "session expired");
             sessions.modify(session_itr, get_self(), [&](auto& row){
                 row.deposit += quantity;
+                row.last_update = eosio::current_time_point();
                 row.state = static_cast<uint8_t>(state::req_action);
             });
         }
@@ -250,6 +253,7 @@ public:
         eosio::check(!is_expired(req_id), "session expired");
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
+            obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
         });
 
@@ -268,6 +272,7 @@ public:
         "state should be 'req_deposit' or 'req_action'");
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
+            obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_action);
         });
 
@@ -287,6 +292,7 @@ public:
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.digest = new_digest;
+            obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_signidice_part_2);
         });
 
@@ -308,6 +314,7 @@ public:
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.digest = new_digest;
+            obj.last_update = eosio::current_time_point();
         });
 
         on_random(req_id, new_digest);
