@@ -202,7 +202,7 @@ public:
             "sesclose"_n,
             std::make_tuple(
                 get_self(),
-                req_id
+                session_itr->last_max_win
             )
         ).send();
 
@@ -226,7 +226,6 @@ public:
             "sesupdate"_n,
             std::make_tuple(
                 get_self(),
-                req_id,
                 max_win_delta
             )
         ).send();
@@ -370,7 +369,7 @@ public:
             "sesclose"_n,
             std::make_tuple(
                 get_self(),
-                req_id
+                asset(0, core_symbol)
             )
         ).send();
 
