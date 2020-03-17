@@ -23,37 +23,17 @@ else()
 endif()
 
 
-message(STATUS "Building game contracts sdk lib ${VERSION_FULL}")
+message(STATUS "Building example contracts ${VERSION_FULL}")
 
 ExternalProject_Add(
-    game_contract_sdk
-    SOURCE_DIR ${CMAKE_SOURCE_DIR}/sdk
-    BINARY_DIR ${CMAKE_BINARY_DIR}/sdk
+    example_contracts_project
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/examples
+    BINARY_DIR ${CMAKE_BINARY_DIR}/examples
     CMAKE_ARGS
         -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
-        -DSDK_VERSION=${VERSION_FULL}
     PATCH_COMMAND ""
     TEST_COMMAND ""
     INSTALL_COMMAND ""
     BUILD_ALWAYS 1
 )
-
-
-if (APPLE)
-    set(OPENSSL_ROOT "/usr/local/opt/openssl")
-elseif (UNIX)
-    set(OPENSSL_ROOT "/usr/include/openssl")
-endif()
-
-set(SECP256K1_ROOT "/usr/local")
-
-if (APPLE)
-    set(OPENSSL_ROOT "/usr/local/opt/openssl")
-elseif (UNIX)
-    set(OPENSSL_ROOT "/usr/include/openssl")
-endif()
-set(SECP256K1_ROOT "/usr/local")
-
-string(REPLACE ";" "|" TEST_FRAMEWORK_PATH "${CMAKE_FRAMEWORK_PATH}")
-string(REPLACE ";" "|" TEST_MODULE_PATH "${CMAKE_MODULE_PATH}")
 

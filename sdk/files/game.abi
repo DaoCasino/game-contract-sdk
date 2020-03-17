@@ -1,0 +1,112 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT",
+    "version": "eosio::abi/1.1",
+    "structs": [
+        {
+            "name": "game_action",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "type",
+                    "type": "uint16"
+                },
+                {
+                    "name": "params",
+                    "type": "uint32[]"
+                }
+            ]
+        },
+        {
+            "name": "init",
+            "base": "",
+            "fields": [
+                {
+                    "name": "platform",
+                    "type": "name"
+                },
+                {
+                    "name": "events",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "new_game",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "signidice_part_1",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "sign",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "signidice_part_2",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "sign",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "gameaction",
+            "type": "game_action",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "init",
+            "type": "init",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newgame",
+            "type": "new_game",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sgdicefirst",
+            "type": "signidice_part_1",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sgdicesecond",
+            "type": "signidice_part_2",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}
