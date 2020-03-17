@@ -1,0 +1,16 @@
+language: minimal
+git:
+  depth: false
+services:
+  - docker
+matrix:
+  fast_finish: true
+jobs:
+  include:
+    - stage: build
+      script:
+        - set -e
+        - rm -rf build
+        - ./cicd/run build
+
+
