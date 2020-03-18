@@ -3,6 +3,16 @@
     "version": "eosio::abi/1.1",
     "structs": [
         {
+            "name": "close",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "game_action",
             "base": "",
             "fields": [
@@ -31,6 +41,10 @@
                 {
                     "name": "events",
                     "type": "name"
+                },
+                {
+                    "name": "session_ttl",
+                    "type": "uint32"
                 }
             ]
         },
@@ -79,6 +93,11 @@
     ],
     "types": [],
     "actions": [
+        {
+            "name": "close",
+            "type": "close",
+            "ricardian_contract": ""
+        },
         {
             "name": "gameaction",
             "type": "game_action",
