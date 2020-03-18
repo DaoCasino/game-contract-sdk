@@ -174,6 +174,7 @@ public:
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2) ||
                      session_itr->state == static_cast<uint8_t>(state::req_action),
         "state should be 'req_signidice_part_2' or 'req_action'");
+        eosio::check(player_win_amount >= session_itr->deposit, "player win should more than deposit");
 
         const auto casino = platform::read::get_casino(get_platform(), session_itr->casino_id);
 
@@ -182,7 +183,7 @@ public:
                 {get_self(),"active"_n},
                 casino.contract,
                 "onloss"_n,
-                std::make_tuple(get_self(), session_itr->player, session_itr->deposit)
+                std::make_tuple(get_self(), session_itr->player, player_win_amount - session_itr->deposit)
             ).send();
 
             transfer(session_itr->player, session_itr->deposit, "player win[game]");
