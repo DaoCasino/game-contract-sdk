@@ -29,6 +29,7 @@ using bytes = std::vector<char>;
 using eosio::checksum256;
 using eosio::time_point;
 using eosio::require_auth;
+using casino::game_params_type;
 
 
 class game: public eosio::contract {
@@ -102,8 +103,9 @@ public:
         uint64_t ses_seq;
         name player;
         uint8_t state;
-        asset deposit;
-        checksum256 digest; // <- signidice result, set seed value on init
+        game_params_type params; // <- game params, copied from casino contract aboid of params changing while active session
+        asset deposit; // <- current player deposit amount, increments when new deposit received
+        checksum256 digest; // <- signidice result, set seed value on new_game
         time_point last_update; // <-- last action time
 
         uint64_t primary_key() const { return req_id; }
@@ -170,7 +172,7 @@ public:
                      session_itr->state == static_cast<uint8_t>(state::req_action),
         "state should be 'req_signidice_part_2' or 'req_action'");
 
-        auto casino = platform::read::get_casino(get_platform(), session_itr->casino_id);
+        const auto casino = platform::read::get_casino(get_platform(), session_itr->casino_id);
 
         if (player_win) {
             eosio::action(
@@ -179,20 +181,11 @@ public:
                 "onloss"_n,
                 std::make_tuple(get_self(), session_itr->player, session_itr->deposit)
             ).send();
-            eosio::action(
-                {get_self(),"active"_n},
-                "eosio.token"_n,
-                "transfer"_n,
-                std::make_tuple(get_self(), session_itr->player, session_itr->deposit, std::string("player win[game]"))
-            ).send();
+
+            transfer(session_itr->player, session_itr->deposit, "player win[game]");
         }
         else {
-            eosio::action(
-                {get_self(),"active"_n},
-                "eosio.token"_n,
-                "transfer"_n,
-                std::make_tuple(get_self(), casino.contract, std::string("casino win"))
-            ).send();
+            transfer(casino.contract, session_itr->deposit, "casino win");
         }
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
@@ -211,11 +204,11 @@ public:
             return;
         }
 
-        auto req_id = get_req_id(memo);
+        const auto req_id = get_req_id(memo);
 
         eosio::check(quantity.symbol == eosio::symbol("BET",4), "invalid token symbol");
 
-        auto session_itr = sessions.find(req_id);
+        const auto session_itr = sessions.find(req_id);
 
         if (session_itr == sessions.end()) {
             eosio::check(platform::read::is_active_game(get_platform(), get_self_id()), "game is't listed in platform");
@@ -252,9 +245,16 @@ public:
         eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't listed in platform");
         eosio::check(!is_expired(req_id), "session expired");
 
+        const auto casino_addr = platform::read::get_casino(get_platform(), casino_id).contract;
+        casino::game_table casino_games(casino_addr, casino_addr.value);
+        const auto game_params = casino_games.get(get_self_id(), "game isn't listed in casino").params;
+        const auto init_digest = calc_seed(req_id);
+
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
+            obj.digest = init_digest;
+            obj.params = game_params;
         });
 
         on_new_game(req_id);
@@ -288,7 +288,7 @@ public:
         "state should be 'req_deposit' or 'req_action'");
 
         eosio::check(daobet::rsa_verify(session_itr->digest, sign, platform::read::get_rsa_pubkey(get_platform())), "invalid signature");
-        auto new_digest = eosio::sha256(sign.data(), sign.size());
+        const auto new_digest = eosio::sha256(sign.data(), sign.size());
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.digest = new_digest;
@@ -310,7 +310,7 @@ public:
 
         const auto& cas_rsa_pubkey = platform::read::get_casino(get_platform(), session_itr->casino_id).rsa_pubkey;
         eosio::check(daobet::rsa_verify(session_itr->digest, sign, cas_rsa_pubkey), "invalid signature");
-        auto new_digest = eosio::sha256(sign.data(), sign.size());
+        const auto new_digest = eosio::sha256(sign.data(), sign.size());
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
             obj.digest = new_digest;
@@ -322,15 +322,10 @@ public:
 
     CONTRACT_ACTION(close)
     void close(uint64_t req_id) {
-        auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
+        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         eosio::check(is_expired(req_id), "session isn't expired, only expired session can be closed");
 
-        eosio::action(
-            {get_self(),"active"_n},
-            "eosio.token"_n,
-            "transfer"_n,
-            std::make_tuple(get_self(), session_itr->player, session_itr->deposit, std::string("refund"))
-        ).send();
+        transfer(session_itr->player, session_itr->deposit, "refund");
 
         sessions.erase(session_itr);
 
@@ -361,7 +356,7 @@ private:
     void emit_event(uint64_t req_id, event_type type, const Event& event) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
 
-        auto data_bytes = eosio::pack<Event>(event);
+        const auto data_bytes = eosio::pack<Event>(event);
 
         eosio::action(
             {get_self(),"active"_n},
@@ -400,6 +395,26 @@ private:
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         const auto gl = global.get_or_default();
         return eosio::current_time_point().sec_since_epoch() - session_itr->last_update.sec_since_epoch() > gl.session_ttl;
+    }
+
+    checksum256 calc_seed(uint64_t req_id) {
+        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
+        std::array<uint64_t, 4> values {
+            get_self_id(),
+            session_itr->casino_id,
+            session_itr->ses_seq,
+            session_itr->player.value
+        };
+        return checksum256(values);
+    }
+
+    void transfer(name to, asset amount, const std::string& memo = "") {
+        eosio::action(
+            {get_self(),"active"_n},
+            "eosio.token"_n,
+            "transfer"_n,
+            std::make_tuple(get_self(), to, amount, memo)
+        ).send();
     }
 };
 
