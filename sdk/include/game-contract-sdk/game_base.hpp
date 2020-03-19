@@ -40,6 +40,7 @@ public:
     static constexpr name platform_signidice_permission = "signidice"_n;
     static constexpr name casino_signidice_permission = "signidice"_n;
     static constexpr symbol core_symbol = symbol("BET", 4);
+    static const asset zero_asset;
 
     enum class state : uint8_t {
         req_deposit = 0,        // <- init|req_signidice_part_2, -> req_start|req_action
@@ -370,7 +371,7 @@ public:
             "sesclose"_n,
             std::make_tuple(
                 get_self(),
-                asset(0, core_symbol)
+                zero_asset
             )
         ).send();
 
@@ -502,6 +503,8 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
     }
     return true;
 }
+
+const asset game::zero_asset = asset(0, game::core_symbol);
 
 } // namespace game_sdk
 
