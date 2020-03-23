@@ -91,7 +91,7 @@ public:
     };
 
     /* global state variables */
-    struct [[eosio::table("global")]] global_row {
+    struct [[eosio::table("global"), eosio::contract("game")]] global_row {
         uint64_t session_seq { 0u };
         name platform;
         name events;
@@ -100,7 +100,7 @@ public:
     using global_singleton = eosio::singleton<"global"_n, global_row>;
 
     /* session struct */
-    struct [[eosio::table("session")]] session_row {
+    struct [[eosio::table("session"), eosio::contract("game")]] session_row {
         uint64_t req_id;
         uint64_t casino_id;
         uint64_t ses_seq;
