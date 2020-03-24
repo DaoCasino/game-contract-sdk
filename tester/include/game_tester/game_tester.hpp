@@ -346,6 +346,12 @@ public:
         ), success());
     }
 
+    void close_session(name game_name, uint64_t ses_id) {
+        BOOST_REQUIRE_EQUAL(push_action(game_name, N(close), { platform_name, N(active) }, mvo()
+            ("req_id", ses_id)
+        ), success());
+    }
+
     asset get_balance(name account) {
         return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account);
     }

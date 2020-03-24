@@ -41,6 +41,7 @@ endmacro()
 
 macro(add_game_test TARGET)
     add_eosio_test(${TARGET} ${ARGN})
+    target_compile_options(${TARGET} PUBLIC -Wno-deprecated-declarations)
     target_link_libraries(${TARGET} game-tester)
 endmacro()
 

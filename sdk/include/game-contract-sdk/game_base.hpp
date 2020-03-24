@@ -151,6 +151,19 @@ public:
         return itr == session.params.end() ? std::nullopt : std::optional<uint32_t> { itr->second };
     }
 
+public:
+    /* utility helpers */
+    uint128_t rand_u128(const checksum256& rand) {
+        const auto& arr = rand.get_array();
+        return arr[0] / 2 + arr[0] / 2;
+    }
+
+    uint64_t rand_u64(const checksum256& rand) {
+        auto u128 = rand_u128(rand);
+        return ((uint64_t)(u128 >> 64) / 2) + ((uint64_t)u128 / 2);
+    }
+
+public:
     /* game session state changers */
     void require_action(uint64_t req_id, uint8_t action_type) {
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
@@ -246,6 +259,7 @@ public:
         });
     }
 
+public:
     /* deposit handler */
     void on_transfer(name from, name to, asset quantity, std::string memo) {
         if (to != get_self()) {
@@ -334,7 +348,7 @@ public:
         const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
         eosio::check(!is_expired(req_id), "session expired");
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_1),
-        "state should be 'req_deposit' or 'req_action'");
+        "state should be 'req_signidice_part_1'");
 
         eosio::check(daobet::rsa_verify(session_itr->digest, sign, platform::read::get_rsa_pubkey(get_platform())), "invalid signature");
         const auto new_digest = eosio::sha256(sign.data(), sign.size());
@@ -354,7 +368,7 @@ public:
         require_auth({get_casino(req_id), casino_signidice_permission});
         eosio::check(!is_expired(req_id), "session expired");
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
-        "state should be 'req_deposit' or 'req_action'");
+        "state should be 'req_signidice_part_2'");
 
         const auto& cas_rsa_pubkey = platform::read::get_casino(get_platform(), session_itr->casino_id).rsa_pubkey;
         eosio::check(daobet::rsa_verify(session_itr->digest, sign, cas_rsa_pubkey), "invalid signature");
@@ -385,7 +399,7 @@ public:
             )
         ).send();
 
-        emit_event<events::game_started>(req_id, event_type::game_started, { });
+        emit_event<events::game_failed>(req_id, event_type::game_failed, { });
 
         sessions.erase(session_itr);
 
@@ -483,6 +497,8 @@ private:
     }
 };
 
+const asset game::zero_asset = asset(0, game::core_symbol);
+
 
 template<typename T, typename... Args>
 bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args...)) {
@@ -513,8 +529,6 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
     }
     return true;
 }
-
-const asset game::zero_asset = asset(0, game::core_symbol);
 
 } // namespace game_sdk
 

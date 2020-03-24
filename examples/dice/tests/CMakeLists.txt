@@ -6,5 +6,5 @@ add_subdirectory(${GAME_SDK_PATH}/tester ${CMAKE_BINARY_DIR}/tester)
 
 configure_file(contracts.hpp.in ${CMAKE_BINARY_DIR}/contracts.hpp)
 
-add_game_test(simple_unit_test simple_tests.cpp )
-target_include_directories(simple_unit_test PUBLIC ${CMAKE_BINARY_DIR})
+add_game_test(dice_unit_test dice_tests.cpp )
+target_include_directories(dice_unit_test PUBLIC ${CMAKE_BINARY_DIR})
