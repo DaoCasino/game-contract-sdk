@@ -12,5 +12,6 @@ jobs:
         - set -e
         - rm -rf build
         - ./cicd/run build
+        - ./cicd/run test --report_level=detailed
 
 
