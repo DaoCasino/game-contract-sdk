@@ -8,7 +8,7 @@ constexpr static uint32_t rand_initializer = 32;
 static int stdlib_rand_seed(const void *buf, int num) {
     assert(num >= sizeof(unsigned int));
     std::srand( rand_initializer );
-    return 0;
+    return 1;
 }
 
 // Fill the buffer with random bytes.  For each byte in the buffer, we generate
@@ -24,6 +24,7 @@ static void stdlib_rand_cleanup() {
 }
 
 static int stdlib_rand_add(const void *buf, int num, double add_entropy) {
+    return 1;
 }
 
 static int stdlib_rand_status() {
