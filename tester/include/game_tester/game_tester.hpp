@@ -17,13 +17,14 @@
 #include <openssl/pem.h>
 #include <openssl/bio.h>
 #include <openssl/x509.h>
-#include <openssl/rand.h>
 
 #include <fc/variant_object.hpp>
 #include <fc/log/logger.hpp>
 
 #include <fstream>
 #include <stdlib.h>
+
+#include "random_mock.hpp" 
 
 #define BOOST_TEST_STATIC_LINK
 
@@ -62,50 +63,7 @@ using RSA_ptr = std::unique_ptr<RSA, decltype(&::RSA_free)>;
 using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
 using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
-
 namespace testing {
-
-constexpr static uint32_t rand_initializer = 32;
-
-static void stdlib_rand_cleanup() {
-}
-
-static int stdlib_rand_add(const void *buf, int num, double add_entropy) {
-}
-
-static int stdlib_rand_status() {
-    return 1;
-}
-
-static int stdlib_rand_seed(const void *_buf, int num) {
-        assert(num >= sizeof(unsigned int));
-        std::srand( rand_initializer );
-        return 0;
-}
-
-// Fill the buffer with random bytes.  For each byte in the buffer, we generate
-// a random number and clamp it to the range of a byte, 0-255.
-static int stdlib_rand_bytes(unsigned char *buf, int num) {
-    for( int index = 0; index < num; ++index ) {
-        buf[index] = std::rand() % 256;
-    }
-    return 1;
-}
-
-// Create the table that will link OpenSSL's rand API to our functions.
-RAND_METHOD stdlib_rand_meth = {
-        stdlib_rand_seed,
-        stdlib_rand_bytes,
-        stdlib_rand_cleanup,
-        stdlib_rand_add,
-        stdlib_rand_bytes,
-        stdlib_rand_status
-};
-
-// This is a public-scope accessor method for our table.
-RAND_METHOD *RAND_stdlib() { 
-    return &stdlib_rand_meth;
-}
 
 class game_tester : public TESTER {
 public:
@@ -115,7 +73,7 @@ public:
 public:
     game_tester() {
         produce_blocks( 2 );
-        RAND_set_rand_method(RAND_stdlib());
+        RAND_set_rand_method(random::RAND_stdlib());
 
         create_accounts({
             N(eosio.token),
