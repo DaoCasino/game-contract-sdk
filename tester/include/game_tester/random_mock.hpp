@@ -5,16 +5,6 @@ namespace testing::random
 
 constexpr static uint32_t rand_initializer = 32;
 
-static void stdlib_rand_cleanup() {
-}
-
-static int stdlib_rand_add(const void *buf, int num, double add_entropy) {
-}
-
-static int stdlib_rand_status() {
-    return 1;
-}
-
 static int stdlib_rand_seed(const void *_buf, int num) {
         assert(num >= sizeof(unsigned int));
         std::srand( rand_initializer );
@@ -27,6 +17,16 @@ static int stdlib_rand_bytes(unsigned char *buf, int num) {
     for( int index = 0; index < num; ++index ) {
         buf[index] = std::rand() % 256;
     }
+    return 1;
+}
+
+static void stdlib_rand_cleanup() {
+}
+
+static int stdlib_rand_add(const void *buf, int num, double add_entropy) {
+}
+
+static int stdlib_rand_status() {
     return 1;
 }
 
