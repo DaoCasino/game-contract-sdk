@@ -73,7 +73,7 @@ public:
 public:
     game_tester() {
         produce_blocks( 2 );
-        RAND_set_rand_method(random::RAND_stdlib());
+        RAND_set_rand_method(random_mock::RAND_stdlib());
 
         create_accounts({
             N(eosio.token),

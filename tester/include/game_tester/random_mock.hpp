@@ -1,11 +1,11 @@
 #include <openssl/rand.h>
 
-namespace testing::random
+namespace testing::random_mock
 {
 
 constexpr static uint32_t rand_initializer = 32;
 
-static int stdlib_rand_seed(const void *_buf, int num) {
+static int stdlib_rand_seed(const void *buf, int num) {
         assert(num >= sizeof(unsigned int));
         std::srand( rand_initializer );
         return 0;
