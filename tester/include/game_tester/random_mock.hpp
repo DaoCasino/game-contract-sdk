@@ -6,9 +6,9 @@ namespace testing::random_mock
 constexpr static uint32_t rand_initializer = 32;
 
 static int stdlib_rand_seed(const void *buf, int num) {
-        assert(num >= sizeof(unsigned int));
-        std::srand( rand_initializer );
-        return 0;
+    assert(num >= sizeof(unsigned int));
+    std::srand( rand_initializer );
+    return 0;
 }
 
 // Fill the buffer with random bytes.  For each byte in the buffer, we generate
@@ -32,12 +32,12 @@ static int stdlib_rand_status() {
 
 // Create the table that will link OpenSSL's rand API to our functions.
 RAND_METHOD stdlib_rand_meth = {
-        stdlib_rand_seed,
-        stdlib_rand_bytes,
-        stdlib_rand_cleanup,
-        stdlib_rand_add,
-        stdlib_rand_bytes,
-        stdlib_rand_status
+    stdlib_rand_seed,
+    stdlib_rand_bytes,
+    stdlib_rand_cleanup,
+    stdlib_rand_add,
+    stdlib_rand_bytes,
+    stdlib_rand_status
 };
 
 // This is a public-scope accessor method for our table.
