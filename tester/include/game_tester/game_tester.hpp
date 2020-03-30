@@ -392,8 +392,10 @@ boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
     // Register fc::exception translator
     boost::unit_test::unit_test_monitor.template register_exception_translator<fc::exception>(&translate_fc_exception);
 
-    auto seed = time(NULL);
+    const auto seed = time(NULL);
     std::srand(seed);
+
     std::cout << "Random number generator seeded to " << seed << std::endl;
+
     return nullptr;
 }
