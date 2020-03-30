@@ -3,8 +3,6 @@
 namespace testing::random_mock
 {
 
-constexpr static uint32_t rand_initializer = 32;
-
 static int stdlib_rand_seed(const void *buf, int num) {
     assert(num >= sizeof(unsigned int));
     return 1;
