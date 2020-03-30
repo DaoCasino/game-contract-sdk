@@ -22,6 +22,9 @@
 #include <fc/log/logger.hpp>
 
 #include <fstream>
+#include <stdlib.h>
+
+#include "random_mock.hpp" 
 
 #define BOOST_TEST_STATIC_LINK
 
@@ -60,7 +63,6 @@ using RSA_ptr = std::unique_ptr<RSA, decltype(&::RSA_free)>;
 using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
 using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
-
 namespace testing {
 
 class game_tester : public TESTER {
@@ -71,6 +73,7 @@ public:
 public:
     game_tester() {
         produce_blocks( 2 );
+        RAND_set_rand_method(random_mock::RAND_stdlib());
 
         create_accounts({
             N(eosio.token),
@@ -202,7 +205,7 @@ public:
 
     RSA_ptr new_rsa_keys() {
         static bool init = true;
-        if( init ) {
+        if (init) {
             ERR_load_crypto_strings();
             init = false;
         }
@@ -389,8 +392,10 @@ boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
     // Register fc::exception translator
     boost::unit_test::unit_test_monitor.template register_exception_translator<fc::exception>(&translate_fc_exception);
 
-    auto seed = time(NULL);
+    const auto seed = time(NULL);
     std::srand(seed);
+
     std::cout << "Random number generator seeded to " << seed << std::endl;
+
     return nullptr;
 }
