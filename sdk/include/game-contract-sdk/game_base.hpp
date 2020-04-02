@@ -60,6 +60,7 @@ public:
         game_failed,
     };
 
+    /* event types */
     struct events {
         struct game_started {
             EOSLIB_SERIALIZE(game_started, )
@@ -170,14 +171,19 @@ protected:
 
 protected:
     /* game session state changers */
-    void require_action(uint64_t ses_id, uint8_t action_type) {
+    void require_action(uint64_t ses_id, uint8_t action_type, bool need_random = false) {
         const auto session_itr = sessions.require_find(ses_id, "session with this ses_id not found");
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start) ||
                      session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
         "state should be 'req_start' or 'req_signidice_part_2'");
 
         sessions.modify(session_itr, get_self(), [&](auto& obj){
-            obj.state = static_cast<uint8_t>(state::req_action);
+            if (!need_random) {
+                obj.state = static_cast<uint8_t>(state::req_action);
+            }
+            else {
+                obj.state = static_cast<uint8_t>(state::req_deposit);
+            }
         });
 
         emit_event<events::action_request>(ses_id, event_type::action_request, { action_type });
@@ -322,6 +328,8 @@ public:
         const auto session_itr = sessions.require_find(ses_id, "session with this ses_id not found");
         require_auth({session_itr->player, player_game_permission});
         eosio::check(!is_expired(ses_id), "session expired");
+
+        // allow `req_deposit` in case of zero deposit from player
         eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action) ||
                      session_itr->state == static_cast<uint8_t>(state::req_deposit),
         "state should be 'req_deposit' or 'req_action'");
