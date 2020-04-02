@@ -166,24 +166,6 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, stub_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(deposit_bad_sender_test, stub_tester) try {
-    auto player_name = N(player);
-
-    create_player(player_name);
-    link_game(player_name, game_name);
-
-    transfer(N(eosio), player_name, STRSYM("10.0000"));
-    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
-
-    auto player_bet = STRSYM("5.0000");
-    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
-
-    BOOST_REQUIRE_EQUAL(transfer(casino_name, game_name, player_bet, std::to_string(ses_id)),
-        wasm_assert_msg("only player can deposit")
-    );
-
-} FC_LOG_AND_RETHROW()
-
 BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, stub_tester) try {
     auto player_name = N(player);
 
