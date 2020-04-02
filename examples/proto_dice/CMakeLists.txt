@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(dice_example)
+project(proto_dice_example)
 
 include(ExternalProject)
 
@@ -9,9 +9,9 @@ find_package(eosio.cdt)
 
 set(GAME_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../) # Path to game SDK project root
 
-message(STATUS "Building dice example contract")
+message(STATUS "Building proto_dice example contract")
 ExternalProject_Add(
-    dice_contract
+    proto_dice_contract
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/contracts
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/contracts
     CMAKE_ARGS
@@ -26,9 +26,9 @@ ExternalProject_Add(
 string(REPLACE ";" "|" TEST_FRAMEWORK_PATH "${CMAKE_FRAMEWORK_PATH}")
 string(REPLACE ";" "|" TEST_MODULE_PATH "${CMAKE_MODULE_PATH}")
 
-message(STATUS "Building dice example unit tests")
+message(STATUS "Building proto_dice example unit tests")
 ExternalProject_Add(
-    dice_unit_tests
+    proto_dice_unit_tests
     LIST_SEPARATOR | # Use the alternate list separator
     CMAKE_ARGS
         -DBOOST_ROOT=${BOOST_ROOT}
@@ -46,5 +46,5 @@ ExternalProject_Add(
     TEST_COMMAND   ""
     INSTALL_COMMAND ""
 )
-add_dependencies(dice_unit_tests dice_contract)
+add_dependencies(proto_dice_unit_tests proto_dice_contract)
 

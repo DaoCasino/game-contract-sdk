@@ -4,7 +4,7 @@
 
 namespace testing {
 
-class dice_tester: public game_tester {
+class proto_dice_tester: public game_tester {
 public:
     static const name game_name;
     static constexpr uint32_t default_min_bet = 1;
@@ -12,7 +12,7 @@ public:
     static constexpr uint32_t default_max_payout = 20;
 
 public:
-    dice_tester() {
+    proto_dice_tester() {
         create_account(game_name);
 
         game_params_type game_params = {
@@ -21,16 +21,16 @@ public:
             {2, default_max_payout * 10000}
         };
 
-        deploy_game<dice_game>(game_name, game_params);
+        deploy_game<proto_dice_game>(game_name, game_params);
     }
 };
 
-const name dice_tester::game_name = N(dicegame);
+const name proto_dice_tester::game_name = N(pdicegame);
 
 
-BOOST_AUTO_TEST_SUITE(dice_tests)
+BOOST_AUTO_TEST_SUITE(proto_dice_tests)
 
-BOOST_FIXTURE_TEST_CASE(new_session_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(new_session_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -51,7 +51,7 @@ BOOST_FIXTURE_TEST_CASE(new_session_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(max_win_min_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(max_win_min_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -68,7 +68,7 @@ BOOST_FIXTURE_TEST_CASE(max_win_min_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(max_win_max_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(max_win_max_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -85,7 +85,7 @@ BOOST_FIXTURE_TEST_CASE(max_win_max_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(max_win_normal_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(max_win_normal_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -104,7 +104,7 @@ BOOST_FIXTURE_TEST_CASE(max_win_normal_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(full_session_success_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(full_session_success_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -136,7 +136,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(session_exiration_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -167,7 +167,7 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -191,7 +191,7 @@ BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -216,7 +216,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(deposit_bad_sender_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(deposit_bad_sender_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -233,7 +233,7 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_sender_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -262,7 +262,7 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, dice_tester) try {
     );
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -296,7 +296,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);
@@ -328,7 +328,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, dice_tester) try {
+BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
     auto player_name = N(player);
 
     create_player(player_name);

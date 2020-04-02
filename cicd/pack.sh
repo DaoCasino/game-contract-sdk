@@ -1,9 +1,11 @@
 #! /bin/bash
 
-printf "\t=========== Create archive example contracts ===========\n\n"
+set -eu
+set -o pipefail
 
-RED='\033[0;31m'
-NC='\033[0m'
+. "${BASH_SOURCE[0]%/*}/utils.sh"
+
+log "=========== Create archive example contracts ===========\n\n"
 
 asset_dir=$(realpath "build/assets")
 mkdir -p $asset_dir
