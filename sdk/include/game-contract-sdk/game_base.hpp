@@ -121,9 +121,16 @@ public:
 public:
     game(name receiver, name code, eosio::datastream<const char*> ds):
         contract(receiver, code, ds),
-        global(_self, _self.value),
         sessions(_self, _self.value)
-    { }
+    {
+        // load global singleton to memory
+        global = global_singleton(_self, _self.value).get_or_default();
+    }
+
+    virtual ~game() {
+        // store singleton after all operations
+        global_singleton(_self, _self.value).set(global, _self);
+    }
 
 protected:
     /* onlinal contract initialization callback */
@@ -136,8 +143,8 @@ protected:
     virtual void on_finish(uint64_t ses_id) { /* do nothing by default */ } // optional
 
     /* getters */
-    global_row get_global() {
-        return global.get_or_default();
+    const global_row& get_global() const {
+        return global;
     }
 
     const session_row& get_session(uint64_t ses_id) const {
@@ -155,16 +162,18 @@ protected:
 
 protected:
     /* utility helpers */
-    uint128_t rand_u128(const checksum256& rand) {
+    uint128_t rand_u128(const checksum256& rand) const {
         const auto& arr = rand.get_array();
         // use % operation to save original distribution
         const uint128_t left = arr[0] % UINT64_MAX;
         const uint128_t right = arr[1] % UINT64_MAX;
-        // just concat parts ()
+
+        // just concat parts
+        // it's not fair way(don't save original distribution), but more simpler
         return (left << 64) & right;
     }
 
-    uint64_t rand_u64(const checksum256& rand) {
+    uint64_t rand_u64(const checksum256& rand) const {
         auto u128 = rand_u128(rand);
         return u128 % UINT64_MAX;
     }
@@ -273,17 +282,15 @@ public:
         if (session_itr == sessions.end()) {
             eosio::check(platform::read::is_active_game(get_platform(), get_self_id()), "game is't listed in platform");
 
-            auto gl = global.get_or_default();
             sessions.emplace(get_self(), [&](auto& row){
                 row.ses_id = ses_id;
-                row.ses_seq = gl.session_seq++;
+                row.ses_seq = global.session_seq++;
                 row.player = from;
                 row.deposit = quantity;
                 row.last_update = eosio::current_time_point();
                 row.last_max_win = zero_asset;
                 row.state = static_cast<uint8_t>(state::req_start);
             });
-            global.set(gl, get_self());
         }
         else {
             eosio::check(session_itr->player == from, "only player can deposit");
@@ -428,18 +435,16 @@ public:
         eosio::check(eosio::is_account(platform), "platform account doesn't exists");
         eosio::check(eosio::is_account(events), "events account doesn't exists");
 
-        auto gl = global.get_or_default();
-        gl.platform = platform;
-        gl.events = events;
-        gl.session_ttl = session_ttl;
-        global.set(gl, get_self());
+        global.platform = platform;
+        global.events = events;
+        global.session_ttl = session_ttl;
 
         on_init();
     }
 
 private:
-    global_singleton global;
     session_table sessions;
+    global_row global;
 
 private:
     template <typename Event>
@@ -463,36 +468,33 @@ private:
         ).send();
     }
 
-    uint64_t get_ses_id(const std::string& str) {
+    uint64_t get_ses_id(const std::string& str) const {
         return std::stoul(str);
     }
 
-    uint64_t get_self_id() {
+    uint64_t get_self_id() const {
         return platform::read::get_game(get_platform(), get_self()).id;
     }
 
-    name get_platform() {
-        auto gl = global.get_or_default();
-        return gl.platform;
+    name get_platform() const {
+        return global.platform;
     }
 
-    name get_events() {
-        auto gl = global.get_or_default();
-        return gl.events;
+    name get_events() const {
+        return global.events;
     }
 
-    name get_casino(uint64_t ses_id) {
+    name get_casino(uint64_t ses_id) const {
         const auto session_itr = sessions.require_find(ses_id, "session with this ses_id not found");
         return platform::read::get_casino(get_platform(), session_itr->casino_id).contract;
     }
 
-    bool is_expired(uint64_t ses_id) {
+    bool is_expired(uint64_t ses_id) const {
         const auto session_itr = sessions.require_find(ses_id, "session with this ses_id not found");
-        const auto gl = global.get_or_default();
-        return eosio::current_time_point().sec_since_epoch() - session_itr->last_update.sec_since_epoch() > gl.session_ttl;
+        return eosio::current_time_point().sec_since_epoch() - session_itr->last_update.sec_since_epoch() > global.session_ttl;
     }
 
-    checksum256 calc_seed(uint64_t ses_id) {
+    checksum256 calc_seed(uint64_t ses_id) const {
         const auto session_itr = sessions.require_find(ses_id, "session with this ses_id not found");
         std::array<uint64_t, 4> values {
             get_self_id(),
@@ -503,7 +505,7 @@ private:
         return checksum256(values);
     }
 
-    void transfer_from_casino(name casino, name to, asset amount) {
+    void transfer_from_casino(name casino, name to, asset amount) const {
         eosio::action(
             {get_self(),"active"_n},
             casino,
@@ -512,7 +514,7 @@ private:
         ).send();
     }
 
-    void transfer(name to, asset amount, const std::string& memo = "") {
+    void transfer(name to, asset amount, const std::string& memo = "") const {
         eosio::action(
             {get_self(),"active"_n},
             "eosio.token"_n,
@@ -521,7 +523,7 @@ private:
         ).send();
     }
 
-    void notify_update_session(uint64_t ses_id, asset max_win_delta) {
+    void notify_update_session(uint64_t ses_id, asset max_win_delta) const {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses_id),
@@ -533,7 +535,7 @@ private:
         ).send();
     }
 
-    void notify_close_session(uint64_t ses_id) {
+    void notify_close_session(uint64_t ses_id) const {
         const auto last_max_win = sessions.get(ses_id).last_max_win;
         eosio::action(
             {get_self(),"active"_n},
