@@ -127,9 +127,9 @@ public:
     virtual void on_init() { /* do nothing by default */ }; // optional
 
     /* game session life-cycle callbacks */
-    virtual void on_new_game(uint64_t req_id) = 0; // must be overrided
-    virtual void on_action(uint64_t req_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overrided
-    virtual void on_random(uint64_t req_id, checksum256 rand) = 0; // must be overrided
+    virtual void on_new_game(uint64_t req_id) = 0; // must be overridden
+    virtual void on_action(uint64_t req_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overridden
+    virtual void on_random(uint64_t req_id, checksum256 rand) = 0; // must be overridden
     virtual void on_finish(uint64_t req_id) { /* do nothing by default */ } // optional
 
 public:
@@ -155,12 +155,16 @@ public:
     /* utility helpers */
     uint128_t rand_u128(const checksum256& rand) {
         const auto& arr = rand.get_array();
-        return arr[0] / 2 + arr[0] / 2;
+        // use % operation to save original distribution
+        const uint128_t left = arr[0] % UINT64_MAX;
+        const uint128_t right = arr[1] % UINT64_MAX;
+        // just concat parts ()
+        return (left << 64) & right;
     }
 
     uint64_t rand_u64(const checksum256& rand) {
         auto u128 = rand_u128(rand);
-        return ((uint64_t)(u128 >> 64) / 2) + ((uint64_t)u128 / 2);
+        return u128 % UINT64_MAX;
     }
 
 public:
