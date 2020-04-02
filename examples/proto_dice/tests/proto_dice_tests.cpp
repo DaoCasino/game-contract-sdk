@@ -146,10 +146,12 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_balance_before = get_balance(player_name);
+    auto casino_balance_before = get_balance(casino_name);
 
-    auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
+    auto player_bet = STRSYM("5.0000");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
-    BOOST_REQUIRE_EQUAL(get_balance(game_name), STRSYM("5.0000"));
+    BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
 
     BOOST_REQUIRE_EQUAL(push_action(game_name, N(close), { platform_name, N(active) }, mvo()
         ("req_id", ses_id)
@@ -163,7 +165,10 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     BOOST_REQUIRE_EQUAL(session.is_null(), true);
 
     auto player_balance_after = get_balance(player_name);
-    BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after);
+    auto casino_balance_after = get_balance(casino_name);
+
+    BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after + player_bet);
+    BOOST_REQUIRE_EQUAL(casino_balance_before, casino_balance_after - player_bet);
 
 } FC_LOG_AND_RETHROW()
 

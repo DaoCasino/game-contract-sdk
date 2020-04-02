@@ -1,6 +1,5 @@
 #! /bin/bash
 
-set -eu
 set -o pipefail
 
 . "${BASH_SOURCE[0]%/*}/utils.sh"
