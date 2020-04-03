@@ -24,14 +24,14 @@
 #include <fstream>
 #include <stdlib.h>
 
-#include "random_mock.hpp" 
+#include "random_mock.hpp"
 
 #define BOOST_TEST_STATIC_LINK
 
 #define REQUIRE_EQUAL_ITERABLES(left, right) { \
     auto l_itr = left.begin(); \
     auto r_itr = right.begin(); \
-    for (; l_itr != left.end() || r_itr != right.end(); ++l_itr, ++r_itr) { \
+    for (; l_itr != left.end() && r_itr != right.end(); ++l_itr, ++r_itr) { \
         BOOST_REQUIRE_EQUAL(*l_itr == *r_itr, true); \
     } \
     BOOST_REQUIRE_EQUAL(l_itr == left.end(), true); \
