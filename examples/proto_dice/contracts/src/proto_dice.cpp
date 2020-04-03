@@ -33,7 +33,7 @@ void proto_dice::on_new_game(uint64_t ses_id) {
     check_params(ses_id);
     check_bet(ses_id);
 
-    require_action(ses_id, roll_action_type);
+    require_action(roll_action_type);
 }
 
 void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) {
@@ -47,9 +47,9 @@ void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t>
         row.number = params[0];
     });
 
-    update_max_win(ses_id, calc_max_win(ses_id, params[0]));
+    update_max_win(calc_max_win(ses_id, params[0]));
 
-    require_random(ses_id);
+    require_random();
 }
 
 void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
@@ -60,11 +60,11 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
     eosio::print("rand num: ", rand_number, "\n");
 
     if (roll.number >= rand_number) { //loose
-        finish_game(ses_id, zero_asset);
+        finish_game(zero_asset);
         return;
     }
 
-    finish_game(ses_id, calc_max_win(ses_id, roll.number) + session.deposit);
+    finish_game(calc_max_win(ses_id, roll.number) + session.deposit);
 }
 
 void proto_dice::on_finish(uint64_t ses_id) {

@@ -66,7 +66,8 @@ public:
             static constexpr uint32_t type { 1u };
 
             uint8_t action_type;
-            EOSLIB_SERIALIZE(action_request, (action_type))
+            bool need_deposit;
+            EOSLIB_SERIALIZE(action_request, (action_type)(need_deposit))
         };
 
         struct signidice_part_1_request {
@@ -186,16 +187,15 @@ protected:
 
 protected:
     /* game session state changers */
-    void require_action(uint64_t ses_id, uint8_t action_type, bool need_random = false) {
-        const auto& session = get_session(ses_id);
+    void require_action(uint8_t action_type, bool need_deposit = false) {
+        const auto& session = get_session(current_session);
 
-        check_current_session(session);
         check_only_states(session, { state::req_start, state::req_signidice_part_2 },
             "state should be 'req_start' or 'req_signidice_part_2'"
         );
 
         sessions.modify(session, get_self(), [&](auto& obj){
-            if (!need_random) {
+            if (!need_deposit) {
                 obj.state = static_cast<uint8_t>(state::req_action);
             }
             else {
@@ -203,13 +203,12 @@ protected:
             }
         });
 
-        emit_event(session, events::action_request{ action_type });
+        emit_event(session, events::action_request{ action_type, need_deposit });
     }
 
-    void require_random(uint64_t ses_id) {
-        const auto& session = get_session(ses_id);
+    void require_random() {
+        const auto& session = get_session(current_session);
 
-        check_current_session(session);
         check_only_states(session, { state::req_action }, "state should be 'req_action'");
 
         sessions.modify(session, get_self(), [&](auto& obj){
@@ -219,10 +218,9 @@ protected:
         emit_event(session, events::signidice_part_1_request{ session.digest });
     }
 
-    void finish_game(uint64_t ses_id, asset player_payout) {
-        const auto& session = get_session(ses_id);
+    void finish_game(asset player_payout) {
+        const auto& session = get_session(current_session);
 
-        check_current_session(session);
         check_only_states(session, { state::req_action, state::req_signidice_part_2 },
             "state should be 'req_signidice_part_2' or 'req_action'"
         );
@@ -262,13 +260,12 @@ protected:
 
         sessions.erase(session);
 
-        on_finish(ses_id);
+        on_finish(current_session);
     }
 
-    void update_max_win(uint64_t ses_id, asset new_max_win) {
-        const auto& session = get_session(ses_id);
+    void update_max_win(asset new_max_win) {
+        const auto& session = get_session(current_session);
 
-        check_current_session(session);
         check_only_states(session, { state::req_action }, "state should be 'req_action'");
 
         // casino require max_win delta
@@ -636,10 +633,6 @@ private:
 
     void check_from_platform_signidice() const {
         require_auth({get_platform(), platform_signidice_permission});
-    }
-
-    void check_current_session(const session_row& ses) const {
-        eosio::check(ses.ses_id == current_session, "only current session can be modified");
     }
 };
 
