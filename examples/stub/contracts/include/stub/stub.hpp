@@ -2,21 +2,18 @@
 
 #include <game-contract-sdk/game_base.hpp>
 
-namespace simple {
+namespace stub {
 
 using eosio::name;
-using eosio::asset;
-using bytes = std::vector<char>;
 using eosio::checksum256;
 
-struct action_type {
-    uint8_t value;
-};
-
-class simple:
-    public game_sdk::game {
+// simple stub game
+class stub: public game_sdk::game {
 public:
-    simple(name receiver, name code, eosio::datastream<const char*> ds):
+    static constexpr uint16_t stub_game_action_type { 0u };
+
+public:
+    stub(name receiver, name code, eosio::datastream<const char*> ds):
         game(receiver, code, ds)
     { }
 
@@ -25,6 +22,8 @@ public:
     virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) final;
 
     virtual void on_random(uint64_t ses_id, checksum256 rand) final;
+
+    virtual void on_finish(uint64_t ses_id) final;
 };
 
-} // namespace simple
+} // namespace stub

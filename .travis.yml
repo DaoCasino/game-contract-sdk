@@ -1,10 +1,10 @@
 language: minimal
 git:
   depth: false
+
 services:
   - docker
-matrix:
-  fast_finish: true
+
 jobs:
   include:
     - stage: build
@@ -12,5 +12,18 @@ jobs:
         - set -e
         - rm -rf build
         - ./cicd/run build
+        - ./cicd/run test --report_level=detailed
+        - ./cicd/run pack
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "fYfAb6JKElCsICmUGGO/Rd5UN0URZLDg1tX6VIIwtMxBkf5N7W4rTAkkk8GSgr/F8ppkA0o/jmIm6h/g6X3HJs05YYeJKotP6vH5iZrhFvE9uB2uaG2YaKSzY65NNnjQr4RZjquZpssGQyDHhvd6UccW/foMzzZx0QQ9gvVA0MTBtZVLILJuzhlp7D6V8VMhYLLM5BKODfScymkkLTAbet4Uv9LUz4Ayub3cWchd8XXGNu9mQhobtiBS1SyWDKDa0UsH3yHVoh6puiIWneFX3+l+6o1C34YQwZhQAXPR98svHxd4/wrx78IJ+PCxDG64HMzakTd53KozGL0uMuZeRbTlH5rQmmzyHpdjsHdn9X6flfp/UiK++aHobfeOqGNxmEeqUtt0MSzpGdwhw51w8JepIJ0t2cWar3F30tvsTOzaIKlDWmiUP+yF4Ro5IC+zX76tF2/+5D8O7hD4futU/o8K1+AoAWJUezXOFQinZtn0IuPyx7KjJdSLxZ2kEZbBO3+1oL2QENeYkqChNonPG2DjiAzTaOQLkc3w6j18NebVQe+Pm1JT2j2VCw288mVHFJgDB+/vdb5x22DC0HRvL0sMMYG1fK9QHLFgJQZeUuvHUGYNYD1WCPiEYR08j0tFo1YaxMJyw+C7DZLH1IHYXsrTp7C5SthynBiFROYxTe8="
+  file_glob: true
+  file: build/assets/*
+  skip_cleanup: true
+  overwrite: true
+  on:
+    tags: true
 
 
