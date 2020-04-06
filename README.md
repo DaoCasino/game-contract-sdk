@@ -149,3 +149,10 @@ Arguments:
 
 ___
 *Learn game examples to more clarify how it works([link](./examples)).*
+
+# Contribution to game SDK
+Interested in contributing? That's awesome! Please follow our git flow:
+
+![git-flow](images/git-flow.svg)
+
+*NOTE: make rebase to actual develop before PR*
