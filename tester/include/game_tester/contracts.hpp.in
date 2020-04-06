@@ -1,0 +1,40 @@
+#pragma once
+#include <eosio/testing/tester.hpp>
+
+using eosio::testing::read_wasm;
+using eosio::testing::read_wast;
+using eosio::testing::read_abi;
+
+namespace testing {
+
+static const eosio::chain::name platform_name = N(platform);
+static const eosio::chain::name events_name = N(events);
+static const eosio::chain::name casino_name = N(casino);
+
+struct contracts {
+    struct platform {
+        struct platfrm {
+            static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/platform/platform.wasm"); }
+            static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/platform/platform.abi"); }
+        };
+
+        struct events {
+            static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/events/events.wasm"); }
+            static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/events/events.abi"); }
+        };
+
+        struct casino {
+            static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/casino/casino.wasm"); }
+            static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/casino/casino.abi"); }
+        };
+    };
+
+    struct system {
+        struct token {
+            static std::vector<uint8_t> wasm() { return read_wasm("${DAOBET_CONTRACTS_PATH}/eosio.token/eosio.token.wasm"); }
+            static std::vector<char>    abi() { return read_abi("${DAOBET_CONTRACTS_PATH}/eosio.token/eosio.token.abi"); }
+        };
+    };
+};
+
+} //namespace testing

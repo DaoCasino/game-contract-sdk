@@ -1,12 +1,17 @@
 #! /bin/bash
 
-printf "\t=========== Create archive eosio.contracts ===========\n\n"
+set -eu
+set -o pipefail
 
-RED='\033[0;31m'
-NC='\033[0m'
+. "${BASH_SOURCE[0]%/*}/utils.sh"
 
-mkdir -p build
-pushd build &> /dev/null
-cmake ..
-cmake --build . --target create_tar
-popd &> /dev/null
+log "=========== Create archive example contracts ===========\n\n"
+
+asset_dir=$(realpath "build/assets")
+mkdir -p $asset_dir
+
+(
+    set -x
+    cd build/examples
+    tar -czf $asset_dir/examples.tar.gz */*/*.abi */*/*.wasm
+)
