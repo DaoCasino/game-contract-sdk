@@ -59,7 +59,7 @@ enum class state : uint8_t {
 
 /* session struct */
 struct [[eosio::table("session")]] session_row {
-    uint64_t req_id;
+    uint64_t ses_id; // <- unique in this game scope session id 
     uint64_t casino_id;
     uint64_t ses_seq;
     name player;
@@ -70,7 +70,7 @@ struct [[eosio::table("session")]] session_row {
     time_point last_update; // <-- last action time
     asset last_max_win; // <- last max win value, updates after on_action
 
-    uint64_t primary_key() const { return req_id; }
+    uint64_t primary_key() const { return ses_id; }
 };
 using session_table = eosio::multi_index<"session"_n, session_row>;
 ```
@@ -128,29 +128,23 @@ Arguments:
 Function which initiate action request from player. After this call contract will go to player action waiting state.
 
 Arguments:
-- ses_id - game session identifier
 - action_type - requested action type
 
 
 #### require_random
 Function which initiate random generation process. After this call contract will go to random value waiting state.
 
-Arguments:
-- ses_id - game session identifier
-
 
 #### finish_game
 Function which initiate session destroying and transferring winner funds.
 
 Arguments:
-- ses_id - game session identifier
 - player_win_amount - player winning amount
 
 #### update_max_win
-Function which change actual session max_win parameter. Should be called from on_action handler when max_win changed. max_win - parameter that show maximum potential player winning.
+Function which change actual session max_win parameter. Should be called from on_action handler when max_win changed. max_win - parameter that shows maximum potential player winning(*total payout including player deposit*).
 
 Arguments:
-- ses_id - game session identifier
 - new_max_win - new max_win amount
 
 ___

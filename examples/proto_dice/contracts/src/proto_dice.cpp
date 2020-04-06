@@ -24,9 +24,9 @@ asset proto_dice::calc_max_win(uint64_t ses_id, uint32_t num) {
     auto win_chance = all_range - num;
 
     if (win_chance > 98) // if player choose '1' then profit -> 0
-        return zero_asset;
+        return session.deposit;
 
-    return max_profit / win_chance; // 0..max_payout
+    return max_profit / win_chance + session.deposit;
 }
 
 void proto_dice::on_new_game(uint64_t ses_id) {
@@ -64,7 +64,7 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
         return;
     }
 
-    finish_game(calc_max_win(ses_id, roll.number) + session.deposit);
+    finish_game(calc_max_win(ses_id, roll.number));
 }
 
 void proto_dice::on_finish(uint64_t ses_id) {

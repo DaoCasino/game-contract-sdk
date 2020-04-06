@@ -263,18 +263,22 @@ protected:
         on_finish(current_session);
     }
 
+    // new_max_win - total payout including deposit
     void update_max_win(asset new_max_win) {
         const auto& session = get_session(current_session);
 
         check_only_states(session, { state::req_action }, "state should be 'req_action'");
 
+        // max casino loss
+        const auto max_casino_lost = new_max_win - session.deposit;
+
         // casino require max_win delta
-        auto max_win_delta = new_max_win - session.last_max_win;
+        const auto max_win_delta = max_casino_lost - session.last_max_win;
 
         notify_update_session(session, max_win_delta);
 
         sessions.modify(session, get_self(), [&](auto& obj){
-            obj.last_max_win = new_max_win;
+            obj.last_max_win = max_casino_lost;
         });
     }
 
