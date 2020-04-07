@@ -19,9 +19,6 @@ def deep_merge_list_of_dict(left: list, right: Optional[list]) -> list:
     if not left:
         return right
 
-    if len(left) == 0 and len(right) == 0:
-        return left
-
     assert all(isinstance(value, dict) for value in left)
     assert all(isinstance(value, dict) for value in right)
 
