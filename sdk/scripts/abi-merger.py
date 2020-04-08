@@ -67,7 +67,7 @@ def merge_abi(abi_collection: Iterable[dict]) -> dict:
 
 
 def merge_abi_files(files: Iterable[Path], result_path: Path):
-    files = (open(str(path), 'r') for path in files)
+    files = (open(str(path), 'r') for path in files if path.exists())
 
     json_dump(obj=merge_abi(map(json_load, files)),
               fp=open(str(result_path), 'w'),
@@ -85,7 +85,9 @@ def main():
     files = tuple(Path(fn) for fn in sys.argv[1:])
     files, output = files[:-1], files[-1]
 
-    assert all(file.exists() for file in files)
+    for file in files:
+        if not file.exists():
+            print(f"File not exist {file}")
 
     merge_abi_files(files=files, result_path=output )
 
