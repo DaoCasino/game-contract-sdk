@@ -13,7 +13,7 @@ struct action_type {
     uint8_t value;
 };
 
-class dice: public game_sdk::game {
+class [[eosio::contract]] dice: public game_sdk::game {
 public:
     static constexpr uint16_t min_bet_param_type = 0;
     static constexpr uint16_t max_bet_param_type = 1;
