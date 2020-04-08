@@ -5,7 +5,12 @@
         {
             "name": "event_data",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "player_win_amount",
+                    "type": "asset",
+                }
+            ]
         }
     ],
 }

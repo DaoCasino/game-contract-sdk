@@ -5,7 +5,12 @@
         {
             "name": "event_data",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "digest",
+                    "type": "checksum256",
+                }
+            ]
         }
     ],
 }
