@@ -1,36 +1,38 @@
 #pragma once
 
-#include <vector>
 #include <variant>
+#include <vector>
 
-#include <platform/platform.hpp>
 #include <casino/casino.hpp>
 #include <events/events.hpp>
+#include <platform/platform.hpp>
 
-#include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
-#include <eosio/serialize.hpp>
-#include <eosio/datastream.hpp>
 #include <eosio/crypto.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/serialize.hpp>
 
 #include <game-contract-sdk/rsa.hpp>
+#include <game-contract-sdk/dispatcher.hpp>
 
+// abi generator hack
 #ifndef NOABI
 #define CONTRACT_ACTION(act_name) [[eosio::action(#act_name)]]
 #else
 #define CONTRACT_ACTION(act_name)
 #endif
 
+
 namespace game_sdk {
 
-using eosio::name;
-using eosio::asset;
-using eosio::symbol;
 using bytes = std::vector<char>;
-using eosio::checksum256;
-using eosio::time_point;
-using eosio::require_auth;
 using casino::game_params_type;
+using eosio::asset;
+using eosio::checksum256;
+using eosio::name;
+using eosio::require_auth;
+using eosio::symbol;
+using eosio::time_point;
 
 
 class game: public eosio::contract {
@@ -40,8 +42,9 @@ public:
     static constexpr name platform_signidice_permission = "signidice"_n;
     static constexpr name casino_signidice_permission = "signidice"_n;
     static constexpr symbol core_symbol = symbol("BET", 4);
-    static const asset zero_asset;
+    static const asset zero_asset; // asset does't have constexpr contructor :(
 
+    /* game states */
     enum class state : uint8_t {
         req_deposit = 0,        // <- init|req_signidice_part_2, -> req_start|req_action
         req_start,              // <- req_deposit, -> req_action|failed
@@ -51,42 +54,48 @@ public:
         finished,               // <- req_signidice_part_2
     };
 
-    enum class event_type : uint32_t {
-        game_started = 0,
-        action_request,
-        signidice_part_1_request,
-        signidice_part_2_request,
-        game_finished,
-        game_failed,
-    };
-
+    /* event data structures, type field doesn't serialize */
     struct events {
         struct game_started {
+            static constexpr uint32_t type { 0u };
+
             EOSLIB_SERIALIZE(game_started, )
         };
 
         struct action_request {
+            static constexpr uint32_t type { 1u };
+
             uint8_t action_type;
-            EOSLIB_SERIALIZE(action_request, (action_type))
+            bool need_deposit;
+            EOSLIB_SERIALIZE(action_request, (action_type)(need_deposit))
         };
 
         struct signidice_part_1_request {
+            static constexpr uint32_t type { 2u };
+
             checksum256 digest;
             EOSLIB_SERIALIZE(signidice_part_1_request, (digest))
         };
 
         struct signidice_part_2_request {
+            static constexpr uint32_t type { 3u };
+
             checksum256 digest;
             EOSLIB_SERIALIZE(signidice_part_2_request, (digest))
         };
 
         struct game_finished {
+            static constexpr uint32_t type { 4u };
+
             asset player_win_amount;
             EOSLIB_SERIALIZE(game_finished, (player_win_amount))
         };
 
         struct game_failed {
-            EOSLIB_SERIALIZE(game_failed, )
+            static constexpr uint32_t type { 5u };
+
+            asset player_win_amount;
+            EOSLIB_SERIALIZE(game_failed, (player_win_amount))
         };
     };
 
@@ -101,7 +110,7 @@ public:
 
     /* session struct */
     struct [[eosio::table("session"), eosio::contract("game")]] session_row {
-        uint64_t req_id;
+        uint64_t ses_id;
         uint64_t casino_id;
         uint64_t ses_seq;
         name player;
@@ -112,38 +121,45 @@ public:
         time_point last_update; // <-- last action time
         asset last_max_win; // <- last max win value, updates after on_action
 
-        uint64_t primary_key() const { return req_id; }
+        uint64_t primary_key() const { return ses_id; }
     };
     using session_table = eosio::multi_index<"session"_n, session_row>;
 
 public:
     game(name receiver, name code, eosio::datastream<const char*> ds):
         contract(receiver, code, ds),
-        global(_self, _self.value),
         sessions(_self, _self.value)
-    { }
+    {
+        // load global singleton to memory
+        global = global_singleton(_self, _self.value).get_or_default();
+    }
 
+    virtual ~game() {
+        // store singleton after all operations
+        global_singleton(_self, _self.value).set(global, _self);
+    }
+
+protected:
     /* onlinal contract initialization callback */
     virtual void on_init() { /* do nothing by default */ }; // optional
 
     /* game session life-cycle callbacks */
-    virtual void on_new_game(uint64_t req_id) = 0; // must be overrided
-    virtual void on_action(uint64_t req_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overrided
-    virtual void on_random(uint64_t req_id, checksum256 rand) = 0; // must be overrided
-    virtual void on_finish(uint64_t req_id) { /* do nothing by default */ } // optional
+    virtual void on_new_game(uint64_t ses_id) = 0; // must be overridden
+    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overridden
+    virtual void on_random(uint64_t ses_id, checksum256 rand) = 0; // must be overridden
+    virtual void on_finish(uint64_t ses_id) { /* do nothing by default */ } // optional
 
-public:
     /* getters */
-    global_row get_global() {
-        return global.get_or_default();
+    const global_row& get_global() const {
+        return global;
     }
 
-    const session_row& get_session(uint64_t req_id) const {
-        return sessions.get(req_id);
+    const session_row& get_session(uint64_t ses_id) const {
+        return sessions.get(ses_id, "session with this ses_id not found");
     }
 
-    std::optional<uint32_t> get_param_value(uint64_t req_id, uint16_t param_type) const {
-        const auto& session = sessions.get(req_id);
+    std::optional<uint32_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
+        const auto& session = sessions.get(ses_id);
         const auto itr = std::find_if(session.params.begin(), session.params.end(),
         [&](const auto& item){
             return item.first == param_type;
@@ -151,111 +167,118 @@ public:
         return itr == session.params.end() ? std::nullopt : std::optional<uint32_t> { itr->second };
     }
 
-public:
+protected:
     /* utility helpers */
-    uint128_t rand_u128(const checksum256& rand) {
+    uint128_t rand_u128(const checksum256& rand) const {
         const auto& arr = rand.get_array();
-        return arr[0] / 2 + arr[0] / 2;
+        // use % operation to save original distribution
+        const uint128_t left = arr[0] % UINT64_MAX;
+        const uint128_t right = arr[1] % UINT64_MAX;
+
+        // just concat parts
+        // it's not fair way(don't save original distribution), but more simpler
+        return (left << 64) & right;
     }
 
-    uint64_t rand_u64(const checksum256& rand) {
+    uint64_t rand_u64(const checksum256& rand) const {
         auto u128 = rand_u128(rand);
-        return ((uint64_t)(u128 >> 64) / 2) + ((uint64_t)u128 / 2);
+        return u128 % UINT64_MAX;
     }
 
-public:
+protected:
     /* game session state changers */
-    void require_action(uint64_t req_id, uint8_t action_type) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start) ||
-                     session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
-        "state should be 'req_start' or 'req_signidice_part_2'");
+    void require_action(uint8_t action_type, bool need_deposit = false) {
+        const auto& session = get_session(current_session);
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
-            obj.state = static_cast<uint8_t>(state::req_action);
+        check_only_states(session, { state::req_start, state::req_signidice_part_2 },
+            "state should be 'req_start' or 'req_signidice_part_2'"
+        );
+
+        sessions.modify(session, get_self(), [&](auto& obj){
+            if (!need_deposit) {
+                obj.state = static_cast<uint8_t>(state::req_action);
+            }
+            else {
+                obj.state = static_cast<uint8_t>(state::req_deposit);
+            }
         });
 
-        emit_event<events::action_request>(req_id, event_type::action_request, { action_type });
+        emit_event(session, events::action_request{ action_type, need_deposit });
     }
 
-    void require_random(uint64_t req_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action), "state should be 'req_action'");
+    void require_random() {
+        const auto& session = get_session(current_session);
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        check_only_states(session, { state::req_action }, "state should be 'req_action'");
+
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.state = static_cast<uint8_t>(state::req_signidice_part_1);
         });
 
-        emit_event<events::signidice_part_1_request>(req_id, event_type::signidice_part_1_request, { session_itr->digest });
+        emit_event(session, events::signidice_part_1_request{ session.digest });
     }
 
-    void finish_game(uint64_t req_id, asset player_win_amount) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2) ||
-                     session_itr->state == static_cast<uint8_t>(state::req_action),
-        "state should be 'req_signidice_part_2' or 'req_action'");
+    void finish_game(asset player_payout) {
+        const auto& session = get_session(current_session);
 
-        const auto casino = platform::read::get_casino(get_platform(), session_itr->casino_id);
+        check_only_states(session, { state::req_action, state::req_signidice_part_2 },
+            "state should be 'req_signidice_part_2' or 'req_action'"
+        );
 
-        if (player_win_amount > session_itr->deposit) {
-            eosio::action(
-                {get_self(),"active"_n},
-                casino.contract,
-                "onloss"_n,
-                std::make_tuple(get_self(), session_itr->player, player_win_amount - session_itr->deposit)
-            ).send();
+        // player_payout is total payout, here we calculate player profit
+        asset player_win = player_payout - session.deposit;
+        eosio::check(player_win <= session.last_max_win, "player win should be less than 'last_max_win'");
 
-            transfer(session_itr->player, session_itr->deposit, "player win[game]");
+        const auto casino_name = get_casino(session);
+
+        /* payout more than deposit */
+        if (player_win.amount > 0) {
+            // request player win from casino
+            transfer_from_casino(casino_name, session.player, player_win);
+            // transfer back deposit
+            transfer(session.player, session.deposit, "player win[game]");
         }
         else {
-            auto to_casino = session_itr->deposit - player_win_amount;
-            if (player_win_amount.amount > 0)
-                transfer(session_itr->player, player_win_amount, "player win[game]");
+            /* player payout more than 0 */
+            if (player_payout.amount > 0)
+                transfer(session.player, player_payout, "player win[game]");
+
+            /* all remain funds transfers to casino */
+            auto to_casino = session.deposit - player_payout;
             if (to_casino.amount > 0)
-                transfer(casino.contract, to_casino, "casino win");
+                transfer(casino_name, to_casino, "casino win");
         }
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::finished);
         });
 
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(req_id),
-            "sesclose"_n,
-            std::make_tuple(
-                get_self(),
-                session_itr->last_max_win
-            )
-        ).send();
+        notify_close_session(session);
 
-        emit_event<events::game_finished>(req_id, event_type::game_finished, { player_win_amount });
+        emit_event(session, events::game_finished { player_win });
 
-        sessions.erase(session_itr);
+        sessions.erase(session);
 
-        on_finish(req_id);
+        on_finish(current_session);
     }
 
-    void update_max_win(uint64_t req_id, asset new_max_win) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth({session_itr->player, player_game_permission});
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action), "state should be 'req_action'");
+    // new_max_win - total payout including deposit
+    void update_max_win(asset new_max_win) {
+        const auto& session = get_session(current_session);
 
-        auto max_win_delta = new_max_win - session_itr->last_max_win;
+        check_only_states(session, { state::req_action }, "state should be 'req_action'");
 
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(req_id),
-            "sesupdate"_n,
-            std::make_tuple(
-                get_self(),
-                max_win_delta
-            )
-        ).send();
+        // max casino loss
+        const auto max_casino_lost = new_max_win - session.deposit;
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
-            obj.last_max_win = new_max_win;
+        // casino require max_win delta
+        const auto max_win_delta = max_casino_lost - session.last_max_win;
+
+        notify_update_session(session, max_win_delta);
+
+        sessions.modify(session, get_self(), [&](auto& obj){
+            obj.last_max_win = max_casino_lost;
         });
     }
 
@@ -266,32 +289,32 @@ public:
             return;
         }
 
-        const auto req_id = get_req_id(memo);
+        const auto ses_id = get_ses_id(memo);
 
         eosio::check(quantity.symbol == core_symbol, "invalid token symbol");
 
-        const auto session_itr = sessions.find(req_id);
+        // if session doesn't exists create new session
+        if (sessions.find(ses_id) == sessions.end()) {
+            check_active_game();
 
-        if (session_itr == sessions.end()) {
-            eosio::check(platform::read::is_active_game(get_platform(), get_self_id()), "game is't listed in platform");
-
-            auto gl = global.get_or_default();
             sessions.emplace(get_self(), [&](auto& row){
-                row.req_id = req_id;
-                row.ses_seq = gl.session_seq++;
+                row.ses_id = ses_id;
+                row.ses_seq = global.session_seq++;
                 row.player = from;
                 row.deposit = quantity;
                 row.last_update = eosio::current_time_point();
                 row.last_max_win = zero_asset;
                 row.state = static_cast<uint8_t>(state::req_start);
             });
-            global.set(gl, get_self());
         }
-        else {
-            eosio::check(session_itr->player == from, "only player can deposit");
-            eosio::check(session_itr->state == static_cast<uint8_t>(state::req_deposit), "state should be 'req_deposit'");
-            eosio::check(!is_expired(req_id), "session expired");
-            sessions.modify(session_itr, get_self(), [&](auto& row){
+        else { /* else add extra deposit */
+            const auto& session = get_session(ses_id);
+
+            check_not_expired(session);
+            check_only_states(session, { state::req_deposit }, "state should be 'req_deposit'");
+            eosio::check(session.player == from, "only player can deposit");
+
+            sessions.modify(session, get_self(), [&](auto& row){
                 row.deposit += quantity;
                 row.last_update = eosio::current_time_point();
                 row.state = static_cast<uint8_t>(state::req_action);
@@ -301,109 +324,140 @@ public:
 
     /* contract actions */
     CONTRACT_ACTION(newgame)
-    void new_game(uint64_t req_id, uint64_t casino_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth({session_itr->player, player_game_permission});
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_start), "state should be 'req_start'");
-        eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't listed in p*10000latform");
-        eosio::check(!is_expired(req_id), "session expired");
+    void new_game(uint64_t ses_id, uint64_t casino_id) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
 
-        const auto casino_addr = get_casino(req_id);;
-        casino::game_table casino_games(casino_addr, casino_addr.value);
-        const auto game_params = casino_games.get(get_self_id(), "game isn't listed in casino").params;
-        const auto init_digest = calc_seed(req_id);
+        /* whitelist checks */
+        check_active_game();
+        check_active_casino(session);
+        check_active_game_in_casino(session);
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        /* auth & state checks */
+        check_from_player(session);
+        check_not_expired(session);
+        check_only_states(session, { state::req_start }, "state should be 'req_start'");
+
+        const auto game_params = fetch_game_params(session);
+        const auto init_digest = calc_seed(session);
+
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
             obj.digest = init_digest;
             obj.params = game_params;
         });
 
-        emit_event<events::game_started>(req_id, event_type::game_started, { });
+        notify_new_session(session);
 
-        on_new_game(req_id);
+        emit_event(session, events::game_started { });
+
+        on_new_game(ses_id);
     }
 
     CONTRACT_ACTION(gameaction)
-    void game_action(uint64_t req_id, uint16_t type, std::vector<uint32_t> params) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth({session_itr->player, player_game_permission});
-        eosio::check(!is_expired(req_id), "session expired");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_action) ||
-                     session_itr->state == static_cast<uint8_t>(state::req_deposit),
-        "state should be 'req_deposit' or 'req_action'");
+    void game_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        check_from_player(session);
+        check_not_expired(session);
+
+        // allow `req_deposit` in case of zero deposit from player
+        check_only_states(session, { state::req_action, state::req_deposit },
+            "state should be 'req_deposit' or 'req_action'"
+        );
+
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_action);
         });
 
-        on_action(req_id, type, params);
+        on_action(ses_id, type, params);
     }
 
     CONTRACT_ACTION(sgdicefirst)
-    void signidice_part_1(uint64_t req_id, const std::string& sign) {
-        require_auth({get_platform(), platform_signidice_permission});
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        eosio::check(!is_expired(req_id), "session expired");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_1),
-        "state should be 'req_signidice_part_1'");
+    void signidice_part_1(uint64_t ses_id, const std::string& sign) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
 
-        eosio::check(daobet::rsa_verify(session_itr->digest, sign, platform::read::get_rsa_pubkey(get_platform())), "invalid signature");
+        check_from_platform_signidice();
+        check_not_expired(session);
+        check_only_states(session, { state::req_signidice_part_1 }, "state should be 'req_signidice_part_1'");
+
+        const auto& platform_rsa_key = platform::read::get_rsa_pubkey(get_platform());
+        eosio::check(daobet::rsa_verify(session.digest, sign, platform_rsa_key), "invalid signature");
+
         const auto new_digest = eosio::sha256(sign.data(), sign.size());
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.digest = new_digest;
             obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_signidice_part_2);
         });
 
-        emit_event<events::signidice_part_1_request>(req_id, event_type::signidice_part_1_request, { new_digest });
+        emit_event(session, events::signidice_part_1_request { new_digest });
     }
 
     CONTRACT_ACTION(sgdicesecond)
-    void signidice_part_2(uint64_t req_id, const std::string& sign) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        require_auth({get_casino(req_id), casino_signidice_permission});
-        eosio::check(!is_expired(req_id), "session expired");
-        eosio::check(session_itr->state == static_cast<uint8_t>(state::req_signidice_part_2),
-        "state should be 'req_signidice_part_2'");
+    void signidice_part_2(uint64_t ses_id, const std::string& sign) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
 
-        const auto& cas_rsa_pubkey = platform::read::get_casino(get_platform(), session_itr->casino_id).rsa_pubkey;
-        eosio::check(daobet::rsa_verify(session_itr->digest, sign, cas_rsa_pubkey), "invalid signature");
+        check_from_casino_signidice(session);
+        check_not_expired(session);
+        check_only_states(session, { state::req_signidice_part_2 }, "state should be 'req_signidice_part_2'");
+
+        const auto& cas_rsa_pubkey = platform::read::get_casino(get_platform(), session.casino_id).rsa_pubkey;
+        eosio::check(daobet::rsa_verify(session.digest, sign, cas_rsa_pubkey), "invalid signature");
         const auto new_digest = eosio::sha256(sign.data(), sign.size());
 
-        sessions.modify(session_itr, get_self(), [&](auto& obj){
+        sessions.modify(session, get_self(), [&](auto& obj){
             obj.digest = new_digest;
             obj.last_update = eosio::current_time_point();
         });
 
-        on_random(req_id, new_digest);
+        on_random(ses_id, new_digest);
     }
 
     CONTRACT_ACTION(close)
-    void close(uint64_t req_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        eosio::check(is_expired(req_id), "session isn't expired, only expired session can be closed");
+    void close(uint64_t ses_id) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
 
-        transfer(session_itr->player, session_itr->deposit, "refund");
+        eosio::check(is_expired(session), "session isn't expired, only expired session can be closed");
 
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(req_id),
-            "sesclose"_n,
-            std::make_tuple(
-                get_self(),
-                zero_asset
-            )
-        ).send();
+        asset player_win = zero_asset;
 
-        emit_event<events::game_failed>(req_id, event_type::game_failed, { });
+        switch (static_cast<state>(session.state)) {
+        /* if casino doesn't provide signidice we assume that casino lost */
+        case state::req_signidice_part_2:
+            // transfer deposit to player
+            transfer(session.player, session.deposit, "player win [session expired]");
+            // request last reported max_win amount funds for player
+            transfer_from_casino(get_casino(session), session.player, session.last_max_win);
+            player_win = session.last_max_win;
+            break;
 
-        sessions.erase(session_itr);
+        /* if platform doesn't provide signidice we refund deposit to player */
+        case state::req_signidice_part_1:
+            // transfer deposit to player
+            transfer(session.player, session.deposit, "refund [session expired]");
+            break;
 
-        on_finish(req_id);
+        /* in other cases we assume that player lost */
+        default:
+            transfer(get_casino(session), session.deposit, "player lost");
+            player_win -= session.deposit;
+        }
+
+        notify_close_session(session);
+
+        emit_event(session, events::game_failed { player_win });
+
+        sessions.erase(session);
+
+        on_finish(ses_id);
     }
 
     CONTRACT_ACTION(init)
@@ -412,24 +466,21 @@ public:
         eosio::check(eosio::is_account(platform), "platform account doesn't exists");
         eosio::check(eosio::is_account(events), "events account doesn't exists");
 
-        auto gl = global.get_or_default();
-        gl.platform = platform;
-        gl.events = events;
-        gl.session_ttl = session_ttl;
-        global.set(gl, get_self());
+        global.platform = platform;
+        global.events = events;
+        global.session_ttl = session_ttl;
 
         on_init();
     }
 
 private:
-    global_singleton global;
     session_table sessions;
+    global_row global;
+    uint64_t current_session; // id of session for which was called action
 
 private:
     template <typename Event>
-    void emit_event(uint64_t req_id, event_type type, const Event& event) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-
+    void emit_event(const session_row& ses, const Event& event) {
         const auto data_bytes = eosio::pack<Event>(event);
 
         eosio::action(
@@ -438,56 +489,65 @@ private:
             "send"_n,
             std::make_tuple(
                 get_self(),
-                session_itr->casino_id,
+                ses.casino_id,
                 get_self_id(),
-                req_id,
-                static_cast<uint32_t>(type),
+                ses.ses_id,
+                event.type,
                 data_bytes
             )
         ).send();
     }
 
-    uint64_t get_req_id(const std::string& str) {
+    uint64_t get_ses_id(const std::string& str) const {
         return std::stoul(str);
     }
 
-    uint64_t get_self_id() {
+    uint64_t get_self_id() const {
         return platform::read::get_game(get_platform(), get_self()).id;
     }
 
-    name get_platform() {
-        auto gl = global.get_or_default();
-        return gl.platform;
+    name get_platform() const {
+        return global.platform;
     }
 
-    name get_events() {
-        auto gl = global.get_or_default();
-        return gl.events;
+    name get_events() const {
+        return global.events;
     }
 
-    name get_casino(uint64_t req_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        return platform::read::get_casino(get_platform(), session_itr->casino_id).contract;
+    name get_casino(const session_row& ses) const {
+        return platform::read::get_casino(get_platform(), ses.casino_id).contract;
     }
 
-    bool is_expired(uint64_t req_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
-        const auto gl = global.get_or_default();
-        return eosio::current_time_point().sec_since_epoch() - session_itr->last_update.sec_since_epoch() > gl.session_ttl;
+    game_params_type fetch_game_params(const session_row& ses) const {
+        const auto casino = get_casino(ses);
+        casino::game_table casino_games(casino, casino.value);
+        return casino_games.get(get_self_id()).params;
     }
 
-    checksum256 calc_seed(uint64_t req_id) {
-        const auto session_itr = sessions.require_find(req_id, "session with this req_id not found");
+    bool is_expired(const session_row& ses) const {
+        return eosio::current_time_point().sec_since_epoch() - ses.last_update.sec_since_epoch() > global.session_ttl;
+    }
+
+    checksum256 calc_seed(const session_row& ses) const {
         std::array<uint64_t, 4> values {
             get_self_id(),
-            session_itr->casino_id,
-            session_itr->ses_seq,
-            session_itr->player.value
+            ses.casino_id,
+            ses.ses_seq,
+            ses.player.value
         };
         return checksum256(values);
     }
 
-    void transfer(name to, asset amount, const std::string& memo = "") {
+    void transfer_from_casino(name casino, name to, asset amount) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            casino,
+            "onloss"_n,
+            std::make_tuple(get_self(), to, amount)
+        ).send();
+    }
+
+    void transfer(name to, asset amount, const std::string& memo = "") const {
         eosio::action(
             {get_self(),"active"_n},
             "eosio.token"_n,
@@ -495,76 +555,92 @@ private:
             std::make_tuple(get_self(), to, amount, memo)
         ).send();
     }
+
+    void notify_new_session(const session_row& ses) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses),
+            "newsession"_n,
+            std::make_tuple(
+                get_self()
+            )
+        ).send();
+    }
+
+    void notify_update_session(const session_row& ses, asset max_win_delta) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses),
+            "sesupdate"_n,
+            std::make_tuple(
+                get_self(),
+                max_win_delta
+            )
+        ).send();
+    }
+
+    void notify_close_session(const session_row& ses) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses),
+            "sesclose"_n,
+            std::make_tuple(
+                get_self(),
+                ses.last_max_win
+            )
+        ).send();
+    }
+
+    void set_current_session(uint64_t ses_id) {
+        current_session = ses_id;
+    }
+
+private:
+    /* checkers */
+    void check_only_states(const session_row& ses, std::initializer_list<state> states, const char* err = "invalid state") const {
+        bool ok = false;
+        for(auto&& st : states) {
+            if (static_cast<state>(ses.state) == st) {
+                ok = true;
+                break;
+            }
+        }
+        eosio::check(ok, err);
+    }
+
+    void check_not_expired(const session_row& ses) const {
+        eosio::check(!is_expired(ses), "session expired");
+    }
+
+    void check_active_game() const {
+        eosio::check(platform::read::is_active_game(get_platform(), get_self_id()), "game is't active in platform");
+    }
+
+    void check_active_game_in_casino(const session_row& ses) const {
+        const auto casino_addr = get_casino(ses);
+        casino::game_table casino_games(casino_addr, casino_addr.value);
+        const auto& game = casino_games.require_find(get_self_id(), "game isn't listed in casino");
+        eosio::check(!game->paused, "game isn't active in casino");
+    }
+
+    void check_active_casino(const session_row& ses) const {
+        eosio::check(platform::read::is_active_casino(get_platform(), ses.casino_id), "casino is't active in platform");
+    }
+
+    void check_from_player(const session_row& ses) const {
+        require_auth({ses.player, player_game_permission});
+    }
+
+    void check_from_casino_signidice(const session_row& ses) const {
+        require_auth({get_casino(ses), casino_signidice_permission});
+    }
+
+    void check_from_platform_signidice() const {
+        require_auth({get_platform(), platform_signidice_permission});
+    }
 };
 
 const asset game::zero_asset = asset(0, game::core_symbol);
 
-
-template<typename T, typename... Args>
-bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args...)) {
-    using namespace eosio;
-    size_t size = action_data_size();
-
-    //using malloc/free here potentially is not exception-safe, although WASM doesn't support exceptions
-    constexpr size_t max_stack_buffer_size = 512;
-    void* buffer = nullptr;
-    if( size > 0 ) {
-        buffer = max_stack_buffer_size < size ? malloc(size) : alloca(size);
-        read_action_data( buffer, size );
-    }
-
-    std::tuple<std::decay_t<Args>...> args;
-    datastream<const char*> ds((char*)buffer, size);
-    ds >> args;
-
-    T inst(self, code, ds);
-
-    auto f2 = [&]( auto... a ){
-        ((&inst)->*func)( a... );
-    };
-
-    boost::mp11::tuple_apply( f2, args );
-    if ( max_stack_buffer_size < size ) {
-        free(buffer);
-    }
-    return true;
-}
-
 } // namespace game_sdk
-
-
-#define GAME_CONTRACT( TYPE ) \
-extern "C" { \
-    void apply(uint64_t receiver, uint64_t code, uint64_t action) { \
-        if (code == "eosio.token"_n.value && action == "transfer"_n.value) { \
-            game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), \
-                              &TYPE::on_transfer); \
-        } \
-        else if (code == receiver) { \
-            switch (action) { \
-                case "init"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::init); \
-                    break; \
-                case "newgame"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game); \
-                    break; \
-                case "gameaction"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action); \
-                    break; \
-                case "sgdicefirst"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_1); \
-                    break; \
-                case "sgdicesecond"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_2); \
-                    break; \
-                case "close"_n.value: \
-                    game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close); \
-                    break; \
-                default: \
-                    eosio::eosio_exit(1); \
-            } \
-        } \
-        eosio::eosio_exit(0); \
-    } \
-}
 

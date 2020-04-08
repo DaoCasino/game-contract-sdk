@@ -2,7 +2,7 @@
 
 #include <game-contract-sdk/game_base.hpp>
 
-namespace dice {
+namespace proto_dice {
 
 using eosio::name;
 using eosio::asset;
@@ -13,7 +13,7 @@ struct action_type {
     uint8_t value;
 };
 
-class [[eosio::contract]] dice: public game_sdk::game {
+class [[eosio::contract]] proto_dice: public game_sdk::game {
 public:
     static constexpr uint16_t min_bet_param_type = 0;
     static constexpr uint16_t max_bet_param_type = 1;
@@ -31,7 +31,7 @@ public:
     using roll_table = eosio::multi_index<"roll"_n, roll_row>;
 
 public:
-    dice(name receiver, name code, eosio::datastream<const char*> ds):
+    proto_dice(name receiver, name code, eosio::datastream<const char*> ds):
         game(receiver, code, ds),
         rolls(_self, _self.value)
     { }
@@ -54,4 +54,4 @@ private:
     roll_table rolls;
 };
 
-} // namespace dice
+} // namespace proto_dice
