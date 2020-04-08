@@ -8,7 +8,7 @@ using eosio::name;
 using eosio::checksum256;
 
 // simple stub game
-class stub: public game_sdk::game {
+class [[eosio::contract]] stub: public game_sdk::game {
 public:
     static constexpr uint16_t stub_game_action_type { 0u };
 
