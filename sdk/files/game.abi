@@ -3,9 +3,231 @@
     "version": "eosio::abi/1.1",
     "structs": [
         {
-            "name": "event_data",
+            "name": "close",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "game_action",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "type",
+                    "type": "uint16"
+                },
+                {
+                    "name": "params",
+                    "type": "uint32[]"
+                }
+            ]
+        },
+        {
+            "name": "global_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "session_seq",
+                    "type": "uint64"
+                },
+                {
+                    "name": "platform",
+                    "type": "name"
+                },
+                {
+                    "name": "events",
+                    "type": "name"
+                },
+                {
+                    "name": "session_ttl",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "init",
+            "base": "",
+            "fields": [
+                {
+                    "name": "platform",
+                    "type": "name"
+                },
+                {
+                    "name": "events",
+                    "type": "name"
+                },
+                {
+                    "name": "session_ttl",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "new_game",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "pair_uint16_uint32",
+            "base": "",
+            "fields": [
+                {
+                    "name": "first",
+                    "type": "uint16"
+                },
+                {
+                    "name": "second",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "session_row",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "ses_seq",
+                    "type": "uint64"
+                },
+                {
+                    "name": "player",
+                    "type": "name"
+                },
+                {
+                    "name": "state",
+                    "type": "uint8"
+                },
+                {
+                    "name": "params",
+                    "type": "game_params_type"
+                },
+                {
+                    "name": "deposit",
+                    "type": "asset"
+                },
+                {
+                    "name": "digest",
+                    "type": "checksum256"
+                },
+                {
+                    "name": "last_update",
+                    "type": "time_point"
+                },
+                {
+                    "name": "last_max_win",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "signidice_part_1",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "sign",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "signidice_part_2",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "sign",
+                    "type": "string"
+                }
+            ]
         }
     ],
+    "types": [
+        {
+            "new_type_name": "game_params_type",
+            "type": "pair_uint16_uint32[]"
+        }
+    ],
+    "actions": [
+        {
+            "name": "close",
+            "type": "close",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "gameaction",
+            "type": "game_action",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "init",
+            "type": "init",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newgame",
+            "type": "new_game",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sgdicefirst",
+            "type": "signidice_part_1",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sgdicesecond",
+            "type": "signidice_part_2",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "global",
+            "type": "global_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "session",
+            "type": "session_row",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
 }
