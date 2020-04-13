@@ -1,4 +1,5 @@
 #include <game_tester/game_tester.hpp>
+#include <game_tester/strategy.hpp>
 
 #include "contracts.hpp"
 
@@ -23,10 +24,60 @@ public:
 
         deploy_game<proto_dice_game>(game_name, game_params);
     }
+
+    double get_rtp()
+    {
+        const auto player_name = N(player);
+        create_player(player_name);
+        link_game(player_name, game_name);
+
+        const uint64_t init_balance = 1000000;
+        transfer(N(eosio), player_name, STRSYM("1000000.0000"));
+
+        auto graph = strategy::Graph([&](game_tester & tester, const uint32_t session_id) {
+                return strategy::Result::Continue;
+        });
+
+        graph._root->push_child(
+            [](const auto & tester) -> bool {
+                return true;
+            },
+            [&](auto & tester, const uint32_t ses_id) {
+                const uint32_t bet_num = 1 + rand() % 99;
+                tester.game_action(game_name, ses_id, 0, { bet_num });
+                std::cout << "action " << ses_id << " " << bet_num << std::endl;
+                return strategy::Result::Continue;
+            }
+        );
+
+        auto executor = strategy::Executor(std::move(graph));
+        const uint64_t run_count = 100;
+
+        executor.process_strategy(
+            *this, run_count, 10,
+            [](game_tester & tester, const uint run) {
+                const auto session_id = tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
+                std::cout << "new_game_session " << session_id << std::endl;
+                return session_id;
+            },
+            [&](game_tester & tester, const uint32_t session_id) {
+                std::cout << "signidice " << session_id << std::endl;
+                tester.signidice(game_name, session_id);
+            }
+        );
+
+        const auto to_double = [](const asset& value) -> double {
+            return double(value.get_amount()) / value.precision();
+        };
+
+        const auto end_balance = to_double(get_balance(player_name));
+        const double bet_balance = double(run_count * 1);
+
+        return ((end_balance - init_balance) / bet_balance) + 1;
+    }
 };
 
 const name proto_dice_tester::game_name = N(pdicegame);
-
 
 BOOST_AUTO_TEST_SUITE(proto_dice_tests)
 
@@ -342,6 +393,11 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
     ), wasm_assert_msg("state should be 'req_signidice_part_2'"));
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(get, proto_dice_tester) try {
+    std::cout << get_rtp() << std::endl;
+} FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace testing

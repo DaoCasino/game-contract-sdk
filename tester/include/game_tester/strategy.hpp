@@ -10,8 +10,9 @@ namespace testing::strategy {
         Continue,
     };
 
+    using session_id_t = uint32_t;
     using condition_t = std::function<bool(const game_tester &)>;
-    using action_t = std::function<Result(game_tester &)>;
+    using action_t = std::function<Result(game_tester &, const session_id_t)>;
 
     class Node {
     public:
@@ -61,11 +62,11 @@ namespace testing::strategy {
         uint process_strategy(game_tester & tester,
                               const uint run_count,
                               const uint limit_per_run,
-                              std::function<void(game_tester &, const uint)> && pre_run_callback,
+                              std::function<session_id_t(game_tester &, const uint)> && pre_run_callback,
                               std::function<void(const game_tester &)> && post_run_callback) {
 
             for (uint run = 0; run != run_count; ++run) {
-                pre_run_callback(tester, run);
+                const auto session_id = pre_run_callback(tester, run);
 
                 if (!process_run(tester, limit_per_run))
                     return run;
@@ -77,9 +78,9 @@ namespace testing::strategy {
         }
 
     private:
-        bool process_run(game_tester & tester, uint limit) {
+        bool process_run(game_tester & tester, const session_id_t session_id, uint limit) {
             while (limit-- != 0) {
-                switch (process_next_step(tester)) {
+                switch (process_next_step(tester, session_id)) {
                     case Result::Continue:
                         continue;
                     case Result::End:
@@ -92,9 +93,9 @@ namespace testing::strategy {
             return false;
         }
 
-        strategy::Result process_next_step(game_tester & tester) {
+        strategy::Result process_next_step(game_tester & tester, const session_id_t session_id) {
             if (_current != nullptr) {
-                const auto result = _current->get_action()(tester);
+                const auto result = _current->get_action()(tester, session_id);
 
                 if (result == Result::Continue) {
                     if (_current = _current->traversal(tester); _current == nullptr) {
