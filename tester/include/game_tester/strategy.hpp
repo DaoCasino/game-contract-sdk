@@ -50,6 +50,9 @@ namespace testing::strategy {
     };
 
     struct Graph {
+        explicit Graph(action_t && root_action) : _root(std::make_shared<strategy::Node>(std::move(root_action))) {
+        }
+
         std::shared_ptr<Node> _root;
     };
 
@@ -63,15 +66,15 @@ namespace testing::strategy {
                               const uint run_count,
                               const uint limit_per_run,
                               std::function<session_id_t(game_tester &, const uint)> && pre_run_callback,
-                              std::function<void(const game_tester &)> && post_run_callback) {
+                              std::function<void(game_tester &, const session_id_t session_id)> && post_run_callback) {
 
             for (uint run = 0; run != run_count; ++run) {
                 const auto session_id = pre_run_callback(tester, run);
 
-                if (!process_run(tester, limit_per_run))
+                if (!process_run(tester, session_id, limit_per_run))
                     return run;
 
-                post_run_callback(tester);
+                post_run_callback(tester, session_id);
             }
 
             return run_count;
