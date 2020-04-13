@@ -59,7 +59,7 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
 
     eosio::print("rand num: ", rand_number, "\n");
 
-    if (roll.number >= rand_number) { //loose
+    if (roll.number >= rand_number) { // Loose
         finish_game(zero_asset);
         return;
     }
