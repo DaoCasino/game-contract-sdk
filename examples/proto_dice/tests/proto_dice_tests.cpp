@@ -25,8 +25,7 @@ public:
         deploy_game<proto_dice_game>(game_name, game_params);
     }
 
-    double get_rtp()
-    {
+    double get_rtp(uint64_t run_count) {
         const auto player_name = N(player);
         create_player(player_name);
         link_game(player_name, game_name);
@@ -51,24 +50,19 @@ public:
             [&](auto & tester, const uint32_t ses_id) {
                 const uint32_t bet_num = 1 + rand() % 99;
                 tester.game_action(game_name, ses_id, 0, { bet_num });
-                //std::cout << "action " << ses_id << " " << bet_num << std::endl;
                 return strategy::Result::Continue;
             }
         );
 
         auto executor = strategy::Executor(std::move(graph));
-        const uint64_t run_count = 100;
 
         executor.process_strategy(
             *this, run_count, 10,
             [](game_tester & tester, const uint run) {
                 const auto session_id = tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
-                //std::cout << "new_game_session " << session_id << std::endl;
                 return session_id;
             },
             [&](game_tester & tester, const uint32_t session_id) {
-                //std::cout << "signidice " << session_id << std::endl;
-                //std::cout << get_game_session(game_name, session_id) << std::endl;
                 tester.signidice(game_name, session_id);
             }
         );
@@ -397,8 +391,8 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(get, proto_dice_tester) try {
-    std::cout << get_rtp() << std::endl;
+BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::disabled()) try {
+    BOOST_TEST(get_rtp(1000) == 0.67, boost::test_tools::tolerance(0.01));
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
