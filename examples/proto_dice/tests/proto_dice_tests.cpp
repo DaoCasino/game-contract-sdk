@@ -25,7 +25,7 @@ public:
         deploy_game<proto_dice_game>(game_name, game_params);
     }
 
-    double get_rtp(uint64_t run_count) {
+    double get_rtp(uint64_t run_count, const uint32_t bet_num) {
         const auto player_name = N(player);
         create_player(player_name);
         link_game(player_name, game_name);
@@ -34,10 +34,11 @@ public:
             return double(value.get_amount()) / value.precision();
         };
 
+        // Init balance for player and casino
         transfer(N(eosio), player_name, STRSYM("1000000.0000"));
         transfer(N(eosio), casino_name, STRSYM("1000000.0000"));
 
-        const double init_balance = to_double(get_balance(player_name));
+        const double start_player_balance = to_double(get_balance(player_name));
 
         auto graph = strategy::Graph([&](game_tester & tester, const uint32_t session_id) {
                 return strategy::Result::Continue;
@@ -48,7 +49,6 @@ public:
                 return true;
             },
             [&](auto & tester, const uint32_t ses_id) {
-                const uint32_t bet_num = 1 + rand() % 99;
                 tester.game_action(game_name, ses_id, 0, { bet_num });
                 return strategy::Result::Continue;
             }
@@ -67,10 +67,10 @@ public:
             }
         );
 
-        const auto end_balance = to_double(get_balance(player_name));
-        const double bet_balance = double(run_count) * bet;
+        const auto end_player_balance = to_double(get_balance(player_name));
+        const double all_bets_balance = double(run_count) * bet;
 
-        return ((end_balance - init_balance) / bet_balance) + 1;
+        return ((end_player_balance - start_player_balance) / all_bets_balance) + 1;
     }
 };
 
@@ -391,8 +391,8 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::disabled()) try {
-    BOOST_TEST(get_rtp(10000) == 0.67, boost::test_tools::tolerance(0.01));
+BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test50, proto_dice_tester, *boost::unit_test::disabled()) try {
+    BOOST_TEST(get_rtp(10000, 50) == 0.67, boost::test_tools::tolerance(0.04));
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
