@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -169,18 +170,18 @@ protected:
 
 protected:
     /* utility helpers */
-    template<typename T>
+    template<typename T, bool = std::is_unsigned<T>::value>
     static T cut_to(const checksum256& input) {
-        T result;
-        uint8_t byte_limit = sizeof(T);
+        return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
+    }
 
-        for (const auto & byte: input.extract_as_byte_array()) {
-            result = (result | byte) << sizeof(byte) * 8;
-            if (--byte_limit == 0)
-                break;
-        }
-
-        return result;
+    template<>
+    static uint128_t cut_to(const checksum256& input) {
+        const auto& parts = input.get_array();
+        const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
+        const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
+        // it's not fair way(don't save original distribution), but more simpler 
+        return (left << (sizeof(uint64_t) * 8)) | right;
     }
 
 protected:
