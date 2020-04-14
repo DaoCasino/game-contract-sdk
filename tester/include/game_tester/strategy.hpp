@@ -65,16 +65,16 @@ namespace testing::strategy {
         uint process_strategy(game_tester & tester,
                               const uint run_count,
                               const uint limit_per_run,
-                              std::function<session_id_t(game_tester &, const uint)> && pre_run_callback,
-                              std::function<void(game_tester &, const session_id_t session_id)> && post_run_callback) {
+                              std::function<session_id_t(game_tester &, const uint)> && session_create,
+                              std::function<void(game_tester &, const session_id_t session_id)> && session_close) {
 
             for (uint run = 0; run != run_count; ++run) {
-                const auto session_id = pre_run_callback(tester, run);
+                const auto session_id = session_create(tester, run);
 
                 if (!process_run(tester, session_id, limit_per_run))
                     return run;
 
-                post_run_callback(tester, session_id);
+                session_close(tester, session_id);
             }
 
             return run_count;
