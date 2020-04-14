@@ -43,7 +43,7 @@ public:
                 return strategy::Result::Continue;
         });
 
-        graph._root->push_child(
+        graph.root->push_child(
             [](const auto & tester) -> bool {
                 return true;
             },
@@ -56,11 +56,11 @@ public:
 
         auto executor = strategy::Executor(std::move(graph));
 
+        const uint32_t bet = 1;
         executor.process_strategy(
             *this, run_count, 10,
             [](game_tester & tester, const uint run) {
-                const auto session_id = tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
-                return session_id;
+                return tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
             },
             [&](game_tester & tester, const uint32_t session_id) {
                 tester.signidice(game_name, session_id);
@@ -68,7 +68,7 @@ public:
         );
 
         const auto end_balance = to_double(get_balance(player_name));
-        const double bet_balance = double(run_count * 1);
+        const double bet_balance = double(run_count) * bet;
 
         return ((end_balance - init_balance) / bet_balance) + 1;
     }

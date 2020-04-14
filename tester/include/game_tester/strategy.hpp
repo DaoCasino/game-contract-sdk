@@ -50,16 +50,16 @@ namespace testing::strategy {
     };
 
     struct Graph {
-        explicit Graph(action_t && root_action) : _root(std::make_shared<strategy::Node>(std::move(root_action))) {
+        explicit Graph(action_t && root_action) : root(std::make_shared<strategy::Node>(std::move(root_action))) {
         }
 
-        std::shared_ptr<Node> _root;
+        std::shared_ptr<Node> root;
     };
 
     class Executor {
     public:
         explicit Executor(Graph && graph) : _graph(graph) {
-            _current = graph._root;
+            _current = graph.root;
         }
 
         uint process_strategy(game_tester & tester,
@@ -102,7 +102,7 @@ namespace testing::strategy {
 
                 if (result == Result::Continue) {
                     if (_current = _current->traversal(tester); _current == nullptr) {
-                        _current = _graph._root;
+                        _current = _graph.root;
                         return Result::End;
                     }
                 }
