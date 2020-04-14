@@ -31,8 +31,14 @@ public:
         create_player(player_name);
         link_game(player_name, game_name);
 
-        const uint64_t init_balance = 1000000;
+        const auto to_double = [](const asset& value) -> double {
+            return double(value.get_amount()) / value.precision();
+        };
+
         transfer(N(eosio), player_name, STRSYM("1000000.0000"));
+        transfer(N(eosio), casino_name, STRSYM("1000000.0000"));
+
+        const double init_balance = to_double(get_balance(player_name));
 
         auto graph = strategy::Graph([&](game_tester & tester, const uint32_t session_id) {
                 return strategy::Result::Continue;
@@ -45,7 +51,7 @@ public:
             [&](auto & tester, const uint32_t ses_id) {
                 const uint32_t bet_num = 1 + rand() % 99;
                 tester.game_action(game_name, ses_id, 0, { bet_num });
-                std::cout << "action " << ses_id << " " << bet_num << std::endl;
+                //std::cout << "action " << ses_id << " " << bet_num << std::endl;
                 return strategy::Result::Continue;
             }
         );
@@ -57,18 +63,15 @@ public:
             *this, run_count, 10,
             [](game_tester & tester, const uint run) {
                 const auto session_id = tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
-                std::cout << "new_game_session " << session_id << std::endl;
+                //std::cout << "new_game_session " << session_id << std::endl;
                 return session_id;
             },
             [&](game_tester & tester, const uint32_t session_id) {
-                std::cout << "signidice " << session_id << std::endl;
+                //std::cout << "signidice " << session_id << std::endl;
+                //std::cout << get_game_session(game_name, session_id) << std::endl;
                 tester.signidice(game_name, session_id);
             }
         );
-
-        const auto to_double = [](const asset& value) -> double {
-            return double(value.get_amount()) / value.precision();
-        };
 
         const auto end_balance = to_double(get_balance(player_name));
         const double bet_balance = double(run_count * 1);

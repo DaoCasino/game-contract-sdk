@@ -355,7 +355,7 @@ public:
         ), success());
     }
 
-    asset get_balance(name account) {
+    asset get_balance(name account) const {
         return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account);
     }
 
@@ -387,7 +387,7 @@ boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
             break;
         }
     }
-    if(!is_verbose) fc::logger::get(DEFAULT_LOGGER).set_log_level(fc::log_level::off);
+    if(!is_verbose) fc::logger::get(DEFAULT_LOGGER).set_log_level(fc::log_level::debug);
 
     // Register fc::exception translator
     boost::unit_test::unit_test_monitor.template register_exception_translator<fc::exception>(&translate_fc_exception);
