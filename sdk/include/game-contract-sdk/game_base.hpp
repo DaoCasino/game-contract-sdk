@@ -171,12 +171,12 @@ protected:
 protected:
     /* utility helpers */
     template<typename T, bool = std::is_unsigned<T>::value>
-    static T cut_to(const checksum256& input) {
+    T cut_to(const checksum256& input) const {
         return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
     }
 
     template<>
-    static uint128_t cut_to(const checksum256& input) {
+    uint128_t cut_to(const checksum256& input) const {
         const auto& parts = input.get_array();
         const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
         const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
