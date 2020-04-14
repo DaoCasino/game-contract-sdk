@@ -169,20 +169,18 @@ protected:
 
 protected:
     /* utility helpers */
-    uint128_t rand_u128(const checksum256& rand) const {
-        const auto& arr = rand.get_array();
-        // use % operation to save original distribution
-        const uint128_t left = arr[0] % UINT64_MAX;
-        const uint128_t right = arr[1] % UINT64_MAX;
+    template<typename T>
+    static T cut_to(const checksum256& input) {
+        T result;
+        uint8_t byte_limit = sizeof(T);
 
-        // just concat parts
-        // it's not fair way(don't save original distribution), but more simpler
-        return (left << 64) & right;
-    }
+        for (const auto & byte: input.extract_as_byte_array()) {
+            result = (result | byte) << sizeof(byte) * 8;
+            if (--byte_limit == 0)
+                break;
+        }
 
-    uint64_t rand_u64(const checksum256& rand) const {
-        auto u128 = rand_u128(rand);
-        return u128 % UINT64_MAX;
+        return result;
     }
 
 protected:
