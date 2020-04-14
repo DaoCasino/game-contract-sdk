@@ -391,7 +391,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::enabled()) try {
+BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::disabled()) try {
     BOOST_TEST(get_rtp(1000000, 50) == 0.67, boost::test_tools::tolerance(0.02));
 } FC_LOG_AND_RETHROW()
 
