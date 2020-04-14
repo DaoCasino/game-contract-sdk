@@ -55,7 +55,7 @@ void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t>
 void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
     const auto& roll = rolls.get(ses_id);
     const auto& session = get_session(ses_id);
-    uint32_t rand_number = rand_u64(rand) % 100;
+    uint32_t rand_number = cut_to<uint32_t>(rand) % 100;
 
     eosio::print("rand num: ", rand_number, "\n");
 
