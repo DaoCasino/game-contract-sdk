@@ -392,7 +392,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::disabled()) try {
-    BOOST_TEST(get_rtp(1000000, [](){ return 1 + (rand() % 99); }) == 0.67, boost::test_tools::tolerance(0.035));
+    BOOST_TEST(get_rtp(10000, [](){ return 1 + (rand() % 99); }) == 0.67, boost::test_tools::tolerance(0.035));
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
