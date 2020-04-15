@@ -59,7 +59,6 @@ namespace testing::strategy {
     class Executor {
     public:
         explicit Executor(Graph && graph) : _graph(graph) {
-            _current = nullptr;
         }
 
         uint process_strategy(game_tester & tester,
@@ -68,12 +67,10 @@ namespace testing::strategy {
                               std::function<session_id_t(game_tester &, const uint)> && session_create,
                               std::function<void(game_tester &, const session_id_t session_id)> && session_close) {
 
-            _current = _graph.root;
-
             for (uint run = 0; run != run_count; ++run) {
                 const auto session_id = session_create(tester, run);
 
-                if (!process_run(tester, session_id, limit_per_run))
+                if (!exectute_to_end(tester, _graph.root, session_id, limit_per_run))
                     return run;
 
                 session_close(tester, session_id);
@@ -83,9 +80,9 @@ namespace testing::strategy {
         }
 
     private:
-        bool process_run(game_tester & tester, const session_id_t session_id, uint limit) {
+        bool exectute_to_end(game_tester & tester, std::shared_ptr<Node> current, const session_id_t session_id, uint limit) {
             while (limit-- != 0) {
-                switch (process_next_step(tester, session_id)) {
+                switch (process_next_step(tester, current, session_id)) {
                     case Result::Continue:
                         continue;
                     case Result::End:
@@ -98,13 +95,12 @@ namespace testing::strategy {
             return false;
         }
 
-        strategy::Result process_next_step(game_tester & tester, const session_id_t session_id) {
-            if (_current != nullptr) {
-                const auto result = _current->get_action()(tester, session_id);
+        static strategy::Result process_next_step(game_tester & tester, std::shared_ptr<Node> & current, const session_id_t session_id) {
+            if (current != nullptr) {
+                const auto result = current->get_action()(tester, session_id);
 
                 if (result == Result::Continue) {
-                    if (_current = _current->traversal(tester); _current == nullptr) {
-                        _current = _graph.root;
+                    if (current = current->traversal(tester); current == nullptr) {
                         return Result::End;
                     }
                 }
@@ -117,6 +113,5 @@ namespace testing::strategy {
 
     private:
         Graph _graph;
-        std::shared_ptr<Node> _current;
     };
 }
