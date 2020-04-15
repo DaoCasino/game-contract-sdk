@@ -61,11 +61,11 @@ BOOST_FIXTURE_TEST_CASE(max_win_min_test, proto_dice_tester) try {
 
     auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
 
-    game_action(game_name, ses_id, 0, { 1 });
+    const param_t bet_num = 1;
+    game_action(game_name, ses_id, 0, { bet_num });
 
     auto session = get_game_session(game_name, ses_id);
     BOOST_REQUIRE_EQUAL(session["last_max_win"].as<asset>(), STRSYM("0.0000"));
-
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(max_win_max_test, proto_dice_tester) try {

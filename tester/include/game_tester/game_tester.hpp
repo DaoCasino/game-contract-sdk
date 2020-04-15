@@ -58,6 +58,7 @@ using namespace fc;
 using mvo = fc::mutable_variant_object;
 using bytes = std::vector<char>;
 using game_params_type = std::vector<std::pair<uint16_t, uint32_t>>;
+using param_t = uint64_t;
 
 using RSA_ptr = std::unique_ptr<RSA, decltype(&::RSA_free)>;
 using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
@@ -315,7 +316,7 @@ public:
         return ses_id++;
     }
 
-    void game_action(name game_name, uint64_t ses_id, uint16_t action_type, std::vector<uint32_t> params, asset deposit = STRSYM("0")) {
+    void game_action(name game_name, uint64_t ses_id, uint16_t action_type, std::vector<param_t> params, asset deposit = STRSYM("0")) {
         auto player = get_game_session(game_name, ses_id)["player"].as<name>();
 
         if (deposit.get_amount() > 0) {
