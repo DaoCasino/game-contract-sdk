@@ -86,7 +86,7 @@ namespace testing::strategy {
                                     uint limit) {
 
             while (limit-- != 0) {
-                switch (process_next_step(tester, current, session_id)) {
+                switch (process_next_step(tester, session_id, current)) {
                     case Result::Continue:
                         continue;
                     case Result::End:
@@ -100,8 +100,8 @@ namespace testing::strategy {
         }
 
         static strategy::Result process_next_step(game_tester & tester,
-                                                  std::shared_ptr<Node> & current,
-                                                  const session_id_t session_id) {
+                                                  const session_id_t session_id,
+                                                  std::shared_ptr<Node> & current) {
 
             if (current != nullptr) {
                 const auto result = current->get_action()(tester, session_id);
