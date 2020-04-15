@@ -33,7 +33,7 @@ using eosio::name;
 using eosio::require_auth;
 using eosio::symbol;
 using eosio::time_point;
-using param_t = uint32_t;
+using param_t = uint64_t;
 
 class game: public eosio::contract {
 public:
