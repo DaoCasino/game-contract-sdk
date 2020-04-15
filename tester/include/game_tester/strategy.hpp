@@ -56,6 +56,7 @@ struct Graph {
     std::shared_ptr<Node> root;
 };
 
+using session_creater_t = 
 class Executor {
 public:
     explicit Executor(Graph && graph) : _graph(graph) {
@@ -65,7 +66,7 @@ public:
                           const uint run_count,
                           const uint limit_per_run,
                           std::function<session_id_t(game_tester &, const uint)> && session_create,
-                          std::function<void(game_tester &, const session_id_t session_id)> && session_close) {
+                          std::function<void(game_tester &, const session_id_t)> && session_close) {
 
         for (uint run = 0; run != run_count; ++run) {
             const auto session_id = session_create(tester, run);
