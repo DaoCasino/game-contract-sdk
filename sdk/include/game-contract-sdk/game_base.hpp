@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -171,20 +172,18 @@ protected:
 
 protected:
     /* utility helpers */
-    uint128_t rand_u128(const checksum256& rand) const {
-        const auto& arr = rand.get_array();
-        // use % operation to save original distribution
-        const uint128_t left = arr[0] % UINT64_MAX;
-        const uint128_t right = arr[1] % UINT64_MAX;
-
-        // just concat parts
-        // it's not fair way(don't save original distribution), but more simpler
-        return (left << 64) & right;
+    template<typename T, class = std::enable_if_t<std::is_unsigned<T>::value>>
+    T cut_to(const checksum256& input) const {
+        return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
     }
 
-    uint64_t rand_u64(const checksum256& rand) const {
-        auto u128 = rand_u128(rand);
-        return u128 % UINT64_MAX;
+    template<>
+    uint128_t cut_to(const checksum256& input) const {
+        const auto& parts = input.get_array();
+        const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
+        const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
+        // it's not fair way(don't save original distribution), but more simpler 
+        return (left << (sizeof(uint64_t) * 8)) | right;
     }
 
 protected:
