@@ -158,12 +158,14 @@ protected:
         return sessions.get(ses_id, "session with this ses_id not found");
     }
 
-    std::optional<uint32_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
+    std::optional<param_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
         const auto& session = sessions.get(ses_id);
+
         const auto itr = std::find_if(session.params.begin(), session.params.end(),
-        [&](const auto& item){
-            return item.first == param_type;
+            [&](const auto& item) {
+                return item.first == param_type;
         });
+
         return itr == session.params.end() ? std::nullopt : std::optional<uint32_t> { itr->second };
     }
 
