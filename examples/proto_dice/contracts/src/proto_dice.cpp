@@ -10,8 +10,8 @@ void proto_dice::check_params(uint64_t ses_id) {
 
 void proto_dice::check_bet(uint64_t ses_id) {
     const auto& session = get_session(ses_id);
-    auto min_bet = asset(*get_param_value(ses_id, min_bet_param_type), core_symbol);
-    auto max_bet = asset(*get_param_value(ses_id, max_bet_param_type), core_symbol);
+    const auto min_bet = asset(*get_param_value(ses_id, min_bet_param_type), core_symbol);
+    const auto max_bet = asset(*get_param_value(ses_id, max_bet_param_type), core_symbol);
 
     eosio::check(min_bet <= session.deposit, "deposit less than min bet");
     eosio::check(max_bet >= session.deposit, "deposit greater than max bet");
