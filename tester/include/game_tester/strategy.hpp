@@ -80,7 +80,11 @@ namespace testing::strategy {
         }
 
     private:
-        bool exectute_to_end(game_tester & tester, std::shared_ptr<Node> current, const session_id_t session_id, uint limit) {
+        static bool exectute_to_end(game_tester & tester,
+                                    std::shared_ptr<Node> current,
+                                    const session_id_t session_id,
+                                    uint limit) {
+
             while (limit-- != 0) {
                 switch (process_next_step(tester, current, session_id)) {
                     case Result::Continue:
@@ -95,7 +99,10 @@ namespace testing::strategy {
             return false;
         }
 
-        static strategy::Result process_next_step(game_tester & tester, std::shared_ptr<Node> & current, const session_id_t session_id) {
+        static strategy::Result process_next_step(game_tester & tester,
+                                                  std::shared_ptr<Node> & current,
+                                                  const session_id_t session_id) {
+
             if (current != nullptr) {
                 const auto result = current->get_action()(tester, session_id);
 
