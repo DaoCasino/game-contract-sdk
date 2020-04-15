@@ -33,7 +33,7 @@ using eosio::name;
 using eosio::require_auth;
 using eosio::symbol;
 using eosio::time_point;
-
+using param_t = uint32_t;
 
 class game: public eosio::contract {
 public:
@@ -145,7 +145,7 @@ protected:
 
     /* game session life-cycle callbacks */
     virtual void on_new_game(uint64_t ses_id) = 0; // must be overridden
-    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overridden
+    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<param_t> params) = 0; // must be overridden
     virtual void on_random(uint64_t ses_id, checksum256 rand) = 0; // must be overridden
     virtual void on_finish(uint64_t ses_id) { /* do nothing by default */ } // optional
 
@@ -356,7 +356,7 @@ public:
     }
 
     CONTRACT_ACTION(gameaction)
-    void game_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) {
+    void game_action(uint64_t ses_id, uint16_t type, std::vector<param_t> params) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 
