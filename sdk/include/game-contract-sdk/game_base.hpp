@@ -124,6 +124,7 @@ public:
 
         uint64_t primary_key() const { return ses_id; }
     };
+
     using session_table = eosio::multi_index<"session"_n, session_row>;
 
 public:
@@ -167,7 +168,7 @@ protected:
                 return item.first == param_type;
         });
 
-        return itr == session.params.end() ? std::nullopt : std::optional<uint32_t> { itr->second };
+        return itr == session.params.end() ? std::nullopt : std::optional<param_t> { itr->second };
     }
 
 protected:

@@ -24,7 +24,7 @@ public:
 public:
     struct [[eosio::table("roll")]] roll_row {
         uint64_t ses_id;
-        game_sdk::param_t number;
+        uint32_t number;
 
         uint64_t primary_key() const { return ses_id; }
     };
@@ -48,7 +48,6 @@ private:
     void check_params(uint64_t ses_id);
     void check_bet(uint64_t ses_id);
     asset calc_max_win(uint64_t ses_id, game_sdk::param_t num);
-    uint32_t rand_range(const checksum256& rand, uint32_t lower, uint32_t upper);
 
 private:
     roll_table rolls;

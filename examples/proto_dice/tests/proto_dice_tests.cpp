@@ -61,8 +61,7 @@ BOOST_FIXTURE_TEST_CASE(max_win_min_test, proto_dice_tester) try {
 
     auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
 
-    const param_t bet_num = 1;
-    game_action(game_name, ses_id, 0, { bet_num });
+    game_action(game_name, ses_id, 0, { 1 });
 
     auto session = get_game_session(game_name, ses_id);
     BOOST_REQUIRE_EQUAL(session["last_max_win"].as<asset>(), STRSYM("0.0000"));
@@ -210,13 +209,13 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, proto_dice_tester) try {
     BOOST_TEST_REQUIRE(push_action(game_name, N(gameaction), { player_name, N(game) }, { casino_name, N(active) }, mvo()
         ("req_id", ses_id)
         ("type", 0)
-        ("params", std::vector<uint32_t> { 30 })
+        ("params", std::vector<param_t> { 30 })
     ).find("but does not have signatures for it") != std::string::npos);
 
     BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), { casino_name, N(active) }, { casino_name, N(active) }, mvo()
         ("req_id", ses_id)
         ("type", 0)
-        ("params", std::vector<uint32_t> { 30 })
+        ("params", std::vector<param_t> { 30 })
     ), "missing authority of player/game");
 
 } FC_LOG_AND_RETHROW()
@@ -266,7 +265,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
     BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), { player_name, N(game) }, { platform_name, N(active) }, mvo()
         ("req_id", ses_id)
         ("type", 0)
-        ("params", std::vector<uint32_t> { 30 })
+        ("params", std::vector<param_t> { 30 })
     ), wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
@@ -279,7 +278,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
     BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), { player_name, N(game) }, { platform_name, N(active) }, mvo()
         ("req_id", ses_id)
         ("type", 0)
-        ("params", std::vector<uint32_t> { 30 })
+        ("params", std::vector<param_t> { 30 })
     ), wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 
 } FC_LOG_AND_RETHROW()
