@@ -57,7 +57,7 @@ using namespace fc;
 
 using mvo = fc::mutable_variant_object;
 using bytes = std::vector<char>;
-using game_params_type = std::vector<std::pair<uint16_t, uint32_t>>;
+using game_params_type = std::vector<std::pair<uint16_t, uint64_t>>;
 using param_t = uint64_t;
 
 using RSA_ptr = std::unique_ptr<RSA, decltype(&::RSA_free)>;
