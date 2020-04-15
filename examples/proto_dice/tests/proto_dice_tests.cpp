@@ -25,7 +25,7 @@ public:
         deploy_game<proto_dice_game>(game_name, game_params);
     }
 
-    double get_rtp(uint64_t run_count, const uint32_t bet_num) {
+    double get_rtp(uint64_t run_count, std::function<uint32_t()> && bet_number_generator) {
         const auto player_name = N(player);
         create_player(player_name);
         link_game(player_name, game_name);
@@ -49,7 +49,7 @@ public:
                 return true;
             },
             [&](auto & tester, const uint32_t ses_id) {
-                tester.game_action(game_name, ses_id, 0, { bet_num });
+                tester.game_action(game_name, ses_id, 0, { bet_number_generator() });
                 return strategy::Result::Continue;
             }
         );
@@ -392,7 +392,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(proto_dice_rtp_test, proto_dice_tester, *boost::unit_test::disabled()) try {
-    BOOST_TEST(get_rtp(1000000, 50) == 0.67, boost::test_tools::tolerance(0.02));
+    BOOST_TEST(get_rtp(10000, [](){ return 1 + (rand() % 99); }) == 0.67, boost::test_tools::tolerance(0.02));
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
