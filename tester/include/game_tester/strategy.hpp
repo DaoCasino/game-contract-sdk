@@ -56,7 +56,6 @@ struct Graph {
     std::shared_ptr<Node> root;
 };
 
-using session_creater_t = 
 class Executor {
 public:
     explicit Executor(Graph && graph) : _graph(graph) {
