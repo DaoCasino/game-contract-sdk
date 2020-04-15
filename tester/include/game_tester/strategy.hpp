@@ -59,7 +59,7 @@ namespace testing::strategy {
     class Executor {
     public:
         explicit Executor(Graph && graph) : _graph(graph) {
-            _current = graph.root;
+            _current = nullptr;
         }
 
         uint process_strategy(game_tester & tester,
@@ -67,6 +67,8 @@ namespace testing::strategy {
                               const uint limit_per_run,
                               std::function<session_id_t(game_tester &, const uint)> && session_create,
                               std::function<void(game_tester &, const session_id_t session_id)> && session_close) {
+
+            _current = _graph.root;
 
             for (uint run = 0; run != run_count; ++run) {
                 const auto session_id = session_create(tester, run);
