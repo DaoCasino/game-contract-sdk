@@ -1,7 +1,7 @@
 #pragma once
 
-#include <type_traits>
 #include <array>
+#include <type_traits>
 
 #include <eosio/eosio.hpp>
 
