@@ -19,7 +19,7 @@ public:
 
     virtual void on_new_game(uint64_t ses_id) final;
 
-    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) final;
+    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk::param_t> params) final;
 
     virtual void on_random(uint64_t ses_id, checksum256 rand) final;
 

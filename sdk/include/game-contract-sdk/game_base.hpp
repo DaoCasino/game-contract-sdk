@@ -34,7 +34,7 @@ using eosio::name;
 using eosio::require_auth;
 using eosio::symbol;
 using eosio::time_point;
-
+using param_t = uint64_t;
 
 class game: public eosio::contract {
 public:
@@ -124,6 +124,7 @@ public:
 
         uint64_t primary_key() const { return ses_id; }
     };
+
     using session_table = eosio::multi_index<"session"_n, session_row>;
 
 public:
@@ -146,7 +147,7 @@ protected:
 
     /* game session life-cycle callbacks */
     virtual void on_new_game(uint64_t ses_id) = 0; // must be overridden
-    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) = 0; // must be overridden
+    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<param_t> params) = 0; // must be overridden
     virtual void on_random(uint64_t ses_id, checksum256 rand) = 0; // must be overridden
     virtual void on_finish(uint64_t ses_id) { /* do nothing by default */ } // optional
 
@@ -159,13 +160,15 @@ protected:
         return sessions.get(ses_id, "session with this ses_id not found");
     }
 
-    std::optional<uint32_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
+    std::optional<param_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
         const auto& session = sessions.get(ses_id);
+
         const auto itr = std::find_if(session.params.begin(), session.params.end(),
-        [&](const auto& item){
-            return item.first == param_type;
+            [&](const auto& item) {
+                return item.first == param_type;
         });
-        return itr == session.params.end() ? std::nullopt : std::optional<uint32_t> { itr->second };
+
+        return itr == session.params.end() ? std::nullopt : std::optional<param_t> { itr->second };
     }
 
 protected:
@@ -355,7 +358,7 @@ public:
     }
 
     CONTRACT_ACTION(gameaction)
-    void game_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) {
+    void game_action(uint64_t ses_id, uint16_t type, std::vector<param_t> params) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 

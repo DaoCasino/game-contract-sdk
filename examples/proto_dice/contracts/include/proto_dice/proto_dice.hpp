@@ -38,7 +38,7 @@ public:
 
     virtual void on_new_game(uint64_t ses_id) final;
 
-    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) final;
+    virtual void on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk::param_t> params) final;
 
     virtual void on_random(uint64_t ses_id, checksum256 rand) final;
 
@@ -47,8 +47,7 @@ public:
 private:
     void check_params(uint64_t ses_id);
     void check_bet(uint64_t ses_id);
-    asset calc_max_win(uint64_t ses_id, uint32_t num);
-    uint32_t rand_range(const checksum256& rand, uint32_t lower, uint32_t upper);
+    asset calc_max_win(uint64_t ses_id, game_sdk::param_t num);
 
 private:
     roll_table rolls;
