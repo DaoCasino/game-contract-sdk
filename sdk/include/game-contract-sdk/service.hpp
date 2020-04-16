@@ -33,6 +33,8 @@ std::array<uint64_t, 4> split(checksum256 && raw) {
     };
 }
 
+// xoshiro256++ prng algo
+// http://prng.di.unimi.it/
 class PRNG {
 public:
     explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {
