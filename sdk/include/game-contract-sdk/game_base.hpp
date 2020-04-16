@@ -639,7 +639,7 @@ T cut_to(const checksum256& input) {
 }
 
 template<>
-uint128_t cut_to(const checksum256& input) {
+uint128_t cut_to(const checksum256 & input) {
     const auto& parts = input.get_array();
     const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
     const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
@@ -660,8 +660,11 @@ std::array<uint64_t, 4> split(checksum256 && raw) {
 
 class PRNG {
 public:
-    explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {}
-    explicit PRNG(std::array<uint64_t, 4> && seed) : _s(std::move(seed)) {}
+    explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {
+    }
+
+    explicit PRNG(std::array<uint64_t, 4> && seed) : _s(std::move(seed)) {
+    }
 
     uint64_t next() {
         const uint64_t result = roll_up(_s[0] + _s[3], 23) + _s[0];
