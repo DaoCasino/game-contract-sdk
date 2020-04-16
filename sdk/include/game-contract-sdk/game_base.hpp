@@ -1,6 +1,5 @@
 #pragma once
 
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -15,6 +14,8 @@
 
 #include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/dispatcher.hpp>
+
+#include "service.hpp"
 
 // abi generator hack
 #ifndef NOABI
@@ -629,68 +630,3 @@ private:
 const asset game::zero_asset = asset(0, game::core_symbol);
 
 } // namespace game_sdk
-
-namespace service {
-using eosio::checksum256;
-
-template<typename T, class = std::enable_if_t<std::is_unsigned<T>::value>>
-T cut_to(const checksum256& input) {
-    return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
-}
-
-template<>
-uint128_t cut_to(const checksum256 & input) {
-    const auto& parts = input.get_array();
-    const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
-    const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
-    // it's not fair way(don't save original distribution), but more simpler 
-    return (left << (sizeof(uint64_t) * 8)) | right;
-}
-
-std::array<uint64_t, 4> split(checksum256 && raw) {
-    const auto& parts = raw.get_array();
-
-    return std::array<uint64_t, 4> {
-        uint64_t(parts[0] >> 64),
-        uint64_t(parts[0]),
-        uint64_t(parts[1] >> 64),
-        uint64_t(parts[1]),
-    };
-}
-
-class PRNG {
-public:
-    explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {
-    }
-
-    explicit PRNG(std::array<uint64_t, 4> && seed) : _s(std::move(seed)) {
-    }
-
-    uint64_t next() {
-        const uint64_t result = roll_up(_s[0] + _s[3], 23) + _s[0];
-
-        const uint64_t t = _s[1] << 17;
-
-        _s[2] ^= _s[0];
-        _s[3] ^= _s[1];
-        _s[1] ^= _s[2];
-        _s[0] ^= _s[3];
-
-        _s[2] ^= t;
-
-        _s[3] = roll_up(_s[3], 45);
-
-        return result;
-    }
-
-private:
-    static inline uint64_t roll_up(const uint64_t value, const int count) {
-        return (value << count) | (value >> (64 - count));
-    }
-
-private:
-    std::array<uint64_t, 4> _s;
-};
-
-} // namespace service
-
