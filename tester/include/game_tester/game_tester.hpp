@@ -355,7 +355,7 @@ public:
         ), success());
     }
 
-    asset get_balance(name account) {
+    asset get_balance(name account) const {
         return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account);
     }
 

@@ -39,6 +39,9 @@ void proto_dice::on_new_game(uint64_t ses_id) {
 void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<uint32_t> params) {
     eosio::check(type == roll_action_type, "allowed only roll action with type 0");
     eosio::check(params.size() == 1, "params amount should be 1");
+
+    eosio::print("player number: ", params[0], "\n");
+
     eosio::check(params[0] > 0, "number should be more than 0");
     eosio::check(params[0] < 100, "number should be less than 100");
 
@@ -59,7 +62,7 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
 
     eosio::print("rand num: ", rand_number, "\n");
 
-    if (roll.number >= rand_number) { //loose
+    if (roll.number >= rand_number) { // Loose
         finish_game(zero_asset);
         return;
     }
