@@ -647,10 +647,20 @@ uint128_t cut_to(const checksum256& input) {
     return (left << (sizeof(uint64_t) * 8)) | right;
 }
 
+std::array<uint64_t, 4> split(checksum256 && raw) {
+    const auto& parts = raw.get_array();
+
+    return std::array<uint64_t, 4> {
+        uint64_t(parts[0] >> 64),
+        uint64_t(parts[0]),
+        uint64_t(parts[1] >> 64),
+        uint64_t(parts[1]),
+    };
+}
+
 class PRNG {
 public:
     explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {}
-
     explicit PRNG(std::array<uint64_t, 4> && seed) : _s(std::move(seed)) {}
 
     uint64_t next() {
@@ -671,17 +681,6 @@ public:
     }
 
 private:
-    static inline std::array<uint64_t, 4> split(checksum256 && raw) {
-        const auto& parts = raw.get_array();
-
-        return std::array<uint64_t, 4> {
-            uint64_t(parts[0] >> 64),
-            uint64_t(parts[0]),
-            uint64_t(parts[1] >> 64),
-            uint64_t(parts[1]),
-        };
-    }
-
     static inline uint64_t roll_up(const uint64_t value, const int count) {
         return (value << count) | (value >> (64 - count));
     }
