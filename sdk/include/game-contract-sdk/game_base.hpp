@@ -450,6 +450,8 @@ public:
             player_win = session.last_max_win;
             break;
 
+        /* if player doesn't start game just refund deposit (here we haven't info about casino) */
+        case state::req_start:
         /* if platform doesn't provide signidice we refund deposit to player */
         case state::req_signidice_part_1:
             // transfer deposit to player
@@ -460,6 +462,12 @@ public:
         default:
             transfer(get_casino(session.casino_id), session.deposit, "player lost");
             player_win -= session.deposit;
+        }
+
+        // if session isn't started we have no info about casino and no need to perform any action
+        if (static_cast<state>(session.state) == state::req_start) {
+            sessions.erase(session);
+            return;
         }
 
         notify_close_session(session);
