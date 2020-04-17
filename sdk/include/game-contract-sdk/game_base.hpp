@@ -334,7 +334,6 @@ public:
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 
-
         /* whitelist checks */
         check_active_game();
         check_active_casino(casino_id);
@@ -345,9 +344,11 @@ public:
         check_not_expired(session);
         check_only_states(session, { state::req_start }, "state should be 'req_start'");
 
-        const auto game_params = fetch_game_params(session);
-        const auto init_digest = calc_seed(session);
+        const auto game_params = fetch_game_params(casino_id);
+        const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
 
+        // always be careful with ref after modify
+        // ref will still life but refer to object without new updates
         sessions.modify(session, get_self(), [&](auto& obj){
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
@@ -355,9 +356,12 @@ public:
             obj.params = game_params;
         });
 
-        notify_new_session(session);
+        // update session ref (invalidates after modify)
+        const auto& updated_session = get_session(ses_id);
 
-        emit_event(session, events::game_started { });
+        notify_new_session(updated_session);
+
+        emit_event(updated_session, events::game_started { });
 
         on_new_game(ses_id);
     }
@@ -525,8 +529,8 @@ private:
         return platform::read::get_casino(get_platform(), casino_id).contract;
     }
 
-    game_params_type fetch_game_params(const session_row& ses) const {
-        const auto casino = get_casino(ses.casino_id);
+    game_params_type fetch_game_params(const uint64_t casino_id) const {
+        const auto casino = get_casino(casino_id);
         casino::game_table casino_games(casino, casino.value);
         return casino_games.get(get_self_id()).params;
     }
@@ -535,12 +539,12 @@ private:
         return eosio::current_time_point().sec_since_epoch() - ses.last_update.sec_since_epoch() > global.session_ttl;
     }
 
-    checksum256 calc_seed(const session_row& ses) const {
+    checksum256 calc_seed(uint64_t casino_id, uint64_t ses_seq, name player) const {
         std::array<uint64_t, 4> values {
             get_self_id(),
-            ses.casino_id,
-            ses.ses_seq,
-            ses.player.value
+            casino_id,
+            ses_seq,
+            player.value
         };
         return checksum256(values);
     }
