@@ -22,7 +22,7 @@ uint128_t cut_to(const checksum256 & input) {
     return (left << (sizeof(uint64_t) * 8)) | right;
 }
 
-std::array<uint64_t, 4> split(checksum256 && raw) {
+std::array<uint64_t, 4> split(const checksum256 & raw) {
     const auto& parts = raw.get_array();
 
     return std::array<uint64_t, 4> {
@@ -37,10 +37,16 @@ std::array<uint64_t, 4> split(checksum256 && raw) {
 // http://prng.di.unimi.it/
 class PRNG {
 public:
+    explicit PRNG(const checksum256 & seed) : _s(split(seed)) {
+    }
+
     explicit PRNG(checksum256 && seed) : _s(split(std::move(seed))) {
     }
 
     explicit PRNG(std::array<uint64_t, 4> && seed) : _s(std::move(seed)) {
+    }
+
+    explicit PRNG(const std::array<uint64_t, 4> & seed) : _s(seed) {
     }
 
     uint64_t next() {
