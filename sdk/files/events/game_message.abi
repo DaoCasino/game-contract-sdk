@@ -7,13 +7,9 @@
             "base": "",
             "fields": [
                 {
-                    "name": "action_type",
-                    "type": "uint8"
-                },
-                {
-                    "name": "need_deposit",
-                    "type": "bool"
-                },
+                    "name": "msg",
+                    "type": "bytes"
+                }
             ]
         }
     ],
