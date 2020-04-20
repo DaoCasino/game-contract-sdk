@@ -15,7 +15,10 @@ __attribute__((eosio_wasm_import)) int rsa_verify(const capi_checksum256 * diges
 namespace daobet {
 bool rsa_verify(const eosio::checksum256 & digest, const std::string & sig, const std::string & pubkey) {
     auto digest_data = digest.extract_as_byte_array();
-    return ::rsa_verify(reinterpret_cast<const capi_checksum256 *>(digest_data.data()), sig.c_str(), sig.size(),
-                        pubkey.c_str(), pubkey.size());
+    return ::rsa_verify(reinterpret_cast<const capi_checksum256 *>(digest_data.data()),
+                        sig.c_str(),
+                        sig.size(),
+                        pubkey.c_str(),
+                        pubkey.size());
 }
 } // namespace daobet

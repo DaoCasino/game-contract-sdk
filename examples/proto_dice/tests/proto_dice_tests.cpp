@@ -50,7 +50,9 @@ class proto_dice_tester : public game_tester {
 
         const uint32_t bet = 1;
         executor.process_strategy(
-            *this, run_count, 10,
+            *this,
+            run_count,
+            10,
             [](game_tester & tester, const uint run) {
                 return tester.new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"));
             },
@@ -222,11 +224,17 @@ BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, proto_dice_tester) try {
     auto ses_id = 0u;
     transfer(player_name, game_name, STRSYM("5.0000"), std::to_string(ses_id));
 
-    BOOST_TEST_REQUIRE(push_action(game_name, N(newgame), {player_name, N(game)}, {casino_name, N(active)},
+    BOOST_TEST_REQUIRE(push_action(game_name,
+                                   N(newgame),
+                                   {player_name, N(game)},
+                                   {casino_name, N(active)},
                                    mvo()("req_id", ses_id)("casino_id", casino_id))
                            .find("but does not have signatures for it") != std::string::npos);
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(newgame), {casino_name, N(active)}, {casino_name, N(active)},
+    BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                    N(newgame),
+                                    {casino_name, N(active)},
+                                    {casino_name, N(active)},
                                     mvo()("req_id", ses_id)("casino_id", casino_id)),
                         "missing authority of player/game");
 }
@@ -243,11 +251,17 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, proto_dice_tester) try {
 
     auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
 
-    BOOST_TEST_REQUIRE(push_action(game_name, N(gameaction), {player_name, N(game)}, {casino_name, N(active)},
+    BOOST_TEST_REQUIRE(push_action(game_name,
+                                   N(gameaction),
+                                   {player_name, N(game)},
+                                   {casino_name, N(active)},
                                    mvo()("req_id", ses_id)("type", 0)("params", std::vector<param_t>{30}))
                            .find("but does not have signatures for it") != std::string::npos);
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {casino_name, N(active)}, {casino_name, N(active)},
+    BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                    N(gameaction),
+                                    {casino_name, N(active)},
+                                    {casino_name, N(active)},
                                     mvo()("req_id", ses_id)("type", 0)("params", std::vector<param_t>{30})),
                         "missing authority of player/game");
 }
@@ -293,7 +307,10 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
 
     game_action(game_name, ses_id, 0, {30});
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {player_name, N(game)}, {platform_name, N(active)},
+    BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                    N(gameaction),
+                                    {player_name, N(game)},
+                                    {platform_name, N(active)},
                                     mvo()("req_id", ses_id)("type", 0)("params", std::vector<param_t>{30})),
                         wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 
@@ -303,7 +320,10 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
         push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
         success());
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {player_name, N(game)}, {platform_name, N(active)},
+    BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                    N(gameaction),
+                                    {player_name, N(game)},
+                                    {platform_name, N(active)},
                                     mvo()("req_id", ses_id)("type", 0)("params", std::vector<param_t>{30})),
                         wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 }

@@ -23,8 +23,8 @@ static int stdlib_rand_add(const void * buf, int num, double add_entropy) { retu
 static int stdlib_rand_status() { return 1; }
 
 // Create the table that will link OpenSSL's rand API to our functions.
-RAND_METHOD stdlib_rand_meth = {stdlib_rand_seed, stdlib_rand_bytes, stdlib_rand_cleanup,
-                                stdlib_rand_add,  stdlib_rand_bytes, stdlib_rand_status};
+RAND_METHOD stdlib_rand_meth = {
+    stdlib_rand_seed, stdlib_rand_bytes, stdlib_rand_cleanup, stdlib_rand_add, stdlib_rand_bytes, stdlib_rand_status};
 
 // This is a public-scope accessor method for our table.
 RAND_METHOD * RAND_stdlib() { return &stdlib_rand_meth; }

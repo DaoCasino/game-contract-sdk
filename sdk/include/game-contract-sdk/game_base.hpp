@@ -181,8 +181,8 @@ class game : public eosio::contract {
     std::optional<param_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
         const auto & session = sessions.get(ses_id);
 
-        const auto itr = std::find_if(session.params.begin(), session.params.end(),
-                                      [&](const auto & item) { return item.first == param_type; });
+        const auto itr = std::find_if(
+            session.params.begin(), session.params.end(), [&](const auto & item) { return item.first == param_type; });
 
         return itr == session.params.end() ? std::nullopt : std::optional<param_t>{itr->second};
     }
@@ -192,7 +192,8 @@ class game : public eosio::contract {
     void require_action(uint8_t action_type, bool need_deposit = false) {
         const auto & session = get_session(current_session);
 
-        check_only_states(session, {state::req_start, state::req_signidice_part_2},
+        check_only_states(session,
+                          {state::req_start, state::req_signidice_part_2},
                           "state should be 'req_start' or 'req_signidice_part_2'");
 
         sessions.modify(session, get_self(), [&](auto & obj) {
@@ -211,8 +212,8 @@ class game : public eosio::contract {
 
         check_only_states(session, {state::req_action}, "state should be 'req_action'");
 
-        sessions.modify(session, get_self(),
-                        [&](auto & obj) { obj.state = static_cast<uint8_t>(state::req_signidice_part_1); });
+        sessions.modify(
+            session, get_self(), [&](auto & obj) { obj.state = static_cast<uint8_t>(state::req_signidice_part_1); });
 
         emit_event(session, events::signidice_part_1_request{session.digest});
     }
@@ -227,7 +228,8 @@ class game : public eosio::contract {
     void finish_game(asset player_payout, std::optional<bytes> && msg) {
         const auto & session = get_session(current_session);
 
-        check_only_states(session, {state::req_action, state::req_signidice_part_2},
+        check_only_states(session,
+                          {state::req_action, state::req_signidice_part_2},
                           "state should be 'req_signidice_part_2' or 'req_action'");
 
         // player_payout is total payout, here we calculate player profit
@@ -368,8 +370,8 @@ class game : public eosio::contract {
         check_not_expired(session);
 
         // allow `req_deposit` in case of zero deposit from player
-        check_only_states(session, {state::req_action, state::req_deposit},
-                          "state should be 'req_deposit' or 'req_action'");
+        check_only_states(
+            session, {state::req_action, state::req_deposit}, "state should be 'req_deposit' or 'req_action'");
 
         sessions.modify(session, get_self(), [&](auto & obj) {
             obj.last_update = eosio::current_time_point();
@@ -485,7 +487,9 @@ class game : public eosio::contract {
     template <typename Event> void emit_event(const session_row & ses, const Event & event) {
         const auto data_bytes = eosio::pack<Event>(event);
 
-        eosio::action({get_self(), "active"_n}, get_events(), "send"_n,
+        eosio::action({get_self(), "active"_n},
+                      get_events(),
+                      "send"_n,
                       std::make_tuple(get_self(), ses.casino_id, get_self_id(), ses.ses_id, event.type, data_bytes))
             .send();
     }
@@ -522,8 +526,8 @@ class game : public eosio::contract {
     }
 
     void transfer(name to, asset amount, const std::string & memo = "") const {
-        eosio::action({get_self(), "active"_n}, "eosio.token"_n, "transfer"_n,
-                      std::make_tuple(get_self(), to, amount, memo))
+        eosio::action(
+            {get_self(), "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(get_self(), to, amount, memo))
             .send();
     }
 
@@ -532,14 +536,14 @@ class game : public eosio::contract {
     }
 
     void notify_update_session(const session_row & ses, asset max_win_delta) const {
-        eosio::action({get_self(), "active"_n}, get_casino(ses), "sesupdate"_n,
-                      std::make_tuple(get_self(), max_win_delta))
+        eosio::action(
+            {get_self(), "active"_n}, get_casino(ses), "sesupdate"_n, std::make_tuple(get_self(), max_win_delta))
             .send();
     }
 
     void notify_close_session(const session_row & ses) const {
-        eosio::action({get_self(), "active"_n}, get_casino(ses), "sesclose"_n,
-                      std::make_tuple(get_self(), ses.last_max_win))
+        eosio::action(
+            {get_self(), "active"_n}, get_casino(ses), "sesclose"_n, std::make_tuple(get_self(), ses.last_max_win))
             .send();
     }
 

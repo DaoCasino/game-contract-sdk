@@ -92,17 +92,21 @@ class game_tester : public TESTER {
 
         auto pl_key = new_rsa_keys();
         rsa_keys.insert(std::make_pair(platform_name, std::move(pl_key)));
-        base_tester::push_action(platform_name, N(setrsakey), platform_name,
+        base_tester::push_action(platform_name,
+                                 N(setrsakey),
+                                 platform_name,
                                  mvo()("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(platform_name))));
 
         base_tester::push_action(events_name, N(setplatform), events_name, mvo()("platform_name", platform_name));
         base_tester::push_action(casino_name, N(setplatform), casino_name, mvo()("platform_name", platform_name));
 
-        base_tester::push_action(platform_name, N(addcas), platform_name,
-                                 mvo()("contract", casino_name)("meta", bytes()));
+        base_tester::push_action(
+            platform_name, N(addcas), platform_name, mvo()("contract", casino_name)("meta", bytes()));
 
         rsa_keys.insert(std::make_pair(casino_name, new_rsa_keys()));
-        base_tester::push_action(platform_name, N(setrsacas), platform_name,
+        base_tester::push_action(platform_name,
+                                 N(setrsacas),
+                                 platform_name,
                                  mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
 
         // create permissions for signidice
@@ -129,12 +133,16 @@ class game_tester : public TESTER {
     }
 
     action_result issue(const name & to, const asset & amount) {
-        return push_action(N(eosio.token), N(issue), config::system_account_name,
+        return push_action(N(eosio.token),
+                           N(issue),
+                           config::system_account_name,
                            mutable_variant_object()("to", to)("quantity", amount)("memo", ""));
     }
 
     action_result transfer(const name & from, const name & to, const asset & amount, const std::string & memo = "") {
-        return push_action(N(eosio.token), N(transfer), from,
+        return push_action(N(eosio.token),
+                           N(transfer),
+                           from,
                            mutable_variant_object()("from", from)("to", to)("quantity", amount)("memo", memo));
     }
 
@@ -234,10 +242,14 @@ class game_tester : public TESTER {
         deploy_contract<Contract>(game_name);
 
         base_tester::push_action(
-            game_name, N(init), game_name,
+            game_name,
+            N(init),
+            game_name,
             mvo()("platform", platform_name)("events", events_name)("session_ttl", game_session_ttl));
 
-        base_tester::push_action(platform_name, N(addgame), platform_name,
+        base_tester::push_action(platform_name,
+                                 N(addgame),
+                                 platform_name,
                                  mvo()("contract", game_name)("params_cnt", params.size())("meta", bytes()));
 
         base_tester::push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
@@ -277,11 +289,16 @@ class game_tester : public TESTER {
         static uint64_t ses_id{0u};
 
         BOOST_REQUIRE_EQUAL(
-            push_action(N(eosio.token), N(transfer), player,
+            push_action(N(eosio.token),
+                        N(transfer),
+                        player,
                         mvo()("from", player)("to", game_name)("quantity", deposit)("memo", std::to_string(ses_id))),
             success());
 
-        BOOST_REQUIRE_EQUAL(push_action(game_name, N(newgame), {player, N(game)}, {platform_name, N(active)},
+        BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                        N(newgame),
+                                        {player, N(game)},
+                                        {platform_name, N(active)},
                                         mvo()("req_id", ses_id)("casino_id", casino_id)),
                             success());
 
@@ -296,7 +313,10 @@ class game_tester : public TESTER {
             transfer(player, game_name, deposit, std::to_string(ses_id));
         }
 
-        BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {player, N(game)}, {platform_name, N(active)},
+        BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                        N(gameaction),
+                                        {player, N(game)},
+                                        {platform_name, N(active)},
                                         mvo()("req_id", ses_id)("type", action_type)("params", params)),
                             success());
     }
@@ -305,18 +325,20 @@ class game_tester : public TESTER {
         auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
 
         auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-        BOOST_REQUIRE_EQUAL(push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)},
-                                        mvo()("req_id", ses_id)("sign", sign_1)),
-                            success());
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+            success());
 
         BOOST_REQUIRE_EQUAL(get_game_session(game_name, ses_id)["digest"].as<sha256>(), sha256::hash(sign_1));
 
         digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
 
         auto sign_2 = rsa_sign(rsa_keys.at(casino_name), digest);
-        BOOST_REQUIRE_EQUAL(push_action(game_name, N(sgdicesecond), {casino_name, N(signidice)},
-                                        mvo()("req_id", ses_id)("sign", sign_2)),
-                            success());
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name, N(sgdicesecond), {casino_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_2)),
+            success());
     }
 
     void close_session(name game_name, uint64_t ses_id) {
