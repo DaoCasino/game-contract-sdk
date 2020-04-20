@@ -1,6 +1,5 @@
 #pragma once
 
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -15,6 +14,7 @@
 
 #include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/dispatcher.hpp>
+#include <game-contract-sdk/service.hpp>
 
 // abi generator hack
 #ifndef NOABI
@@ -169,22 +169,6 @@ protected:
         });
 
         return itr == session.params.end() ? std::nullopt : std::optional<param_t> { itr->second };
-    }
-
-protected:
-    /* utility helpers */
-    template<typename T, class = std::enable_if_t<std::is_unsigned<T>::value>>
-    T cut_to(const checksum256& input) const {
-        return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
-    }
-
-    template<>
-    uint128_t cut_to(const checksum256& input) const {
-        const auto& parts = input.get_array();
-        const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
-        const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
-        // it's not fair way(don't save original distribution), but more simpler 
-        return (left << (sizeof(uint64_t) * 8)) | right;
     }
 
 protected:
@@ -645,4 +629,3 @@ private:
 const asset game::zero_asset = asset(0, game::core_symbol);
 
 } // namespace game_sdk
-
