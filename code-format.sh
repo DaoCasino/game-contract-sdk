@@ -1,3 +1,3 @@
 #!/bin/sh
 
-find . -regex '.*\.\(cpp\|hpp\)' -not -path "*build*" -exec clang-format -i {} \; 
+find . -iname '*.[ch]pp' \! -path '*/build/*' \! -path './.git/*' -exec clang-format -i {} \; 
