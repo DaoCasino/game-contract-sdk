@@ -56,7 +56,9 @@ class Executor {
   public:
     explicit Executor(Graph && graph) : _graph(graph) {}
 
-    uint process_strategy(game_tester & tester, const uint run_count, const uint limit_per_run,
+    uint process_strategy(game_tester & tester,
+                          const uint run_count,
+                          const uint limit_per_run,
                           std::function<session_id_t(game_tester &, const uint)> && session_create,
                           std::function<void(game_tester &, const session_id_t)> && session_close) {
 
@@ -73,8 +75,8 @@ class Executor {
     }
 
   private:
-    static bool exectute_to_end(game_tester & tester, std::shared_ptr<Node> current, const session_id_t session_id,
-                                uint limit) {
+    static bool
+    exectute_to_end(game_tester & tester, std::shared_ptr<Node> current, const session_id_t session_id, uint limit) {
 
         while (limit-- != 0) {
             switch (process_next_step(tester, session_id, current)) {
@@ -90,8 +92,8 @@ class Executor {
         return false;
     }
 
-    static strategy::Result process_next_step(game_tester & tester, const session_id_t session_id,
-                                              std::shared_ptr<Node> & current) {
+    static strategy::Result
+    process_next_step(game_tester & tester, const session_id_t session_id, std::shared_ptr<Node> & current) {
 
         if (current != nullptr) {
             const auto result = current->get_action()(tester, session_id);

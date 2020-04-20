@@ -8,8 +8,8 @@ struct __attribute__((aligned(16))) capi_checksum256 {
     uint8_t hash[32];
 };
 
-__attribute__((eosio_wasm_import)) int rsa_verify(const capi_checksum256 * digest, const char * sig, size_t siglen,
-                                                  const char * pub, size_t publen);
+__attribute__((eosio_wasm_import)) int
+rsa_verify(const capi_checksum256 * digest, const char * sig, size_t siglen, const char * pub, size_t publen);
 }
 
 namespace daobet {

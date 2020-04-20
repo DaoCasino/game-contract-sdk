@@ -551,7 +551,8 @@ class game : public eosio::contract {
 
   private:
     /* checkers */
-    void check_only_states(const session_row & ses, std::initializer_list<state> states,
+    void check_only_states(const session_row & ses,
+                           std::initializer_list<state> states,
                            const char * err = "invalid state") const {
         bool ok = false;
         for (auto && st : states) {

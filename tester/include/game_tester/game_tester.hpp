@@ -146,7 +146,9 @@ class game_tester : public TESTER {
                            mutable_variant_object()("from", from)("to", to)("quantity", amount)("memo", memo));
     }
 
-    action_result push_action(const action_name & contract, const action_name & name, const action_name & actor,
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const action_name & actor,
                               const variant_object & data) {
         string action_type_name = abi_ser[contract].get_action_type(name);
 
@@ -158,8 +160,11 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
-    action_result push_action(const action_name & contract, const action_name & name, const permission_level & auth,
-                              const permission_level & key, const variant_object & data) {
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const permission_level & auth,
+                              const permission_level & key,
+                              const variant_object & data) {
         using namespace eosio;
         using namespace eosio::chain;
 
@@ -188,7 +193,9 @@ class game_tester : public TESTER {
         return success();
     }
 
-    action_result push_action(const action_name & contract, const action_name & name, const permission_level & auth,
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const permission_level & auth,
                               const variant_object & data) {
         return push_action(contract, name, auth, auth, data);
     }
@@ -305,7 +312,10 @@ class game_tester : public TESTER {
         return ses_id++;
     }
 
-    void game_action(name game_name, uint64_t ses_id, uint16_t action_type, std::vector<param_t> params,
+    void game_action(name game_name,
+                     uint64_t ses_id,
+                     uint16_t action_type,
+                     std::vector<param_t> params,
                      asset deposit = STRSYM("0")) {
         auto player = get_game_session(game_name, ses_id)["player"].as<name>();
 
