@@ -90,14 +90,23 @@ class game : public eosio::contract {
             static constexpr uint32_t type{4u};
 
             asset player_win_amount;
-            EOSLIB_SERIALIZE(game_finished, (player_win_amount))
+            bytes msg;
+            EOSLIB_SERIALIZE(game_finished, (player_win_amount)(msg))
         };
 
         struct game_failed {
             static constexpr uint32_t type{5u};
 
             asset player_win_amount;
-            EOSLIB_SERIALIZE(game_failed, (player_win_amount))
+            bytes msg;
+            EOSLIB_SERIALIZE(game_failed, (player_win_amount)(msg))
+        };
+
+        struct game_message {
+            static constexpr uint32_t type{6u};
+
+            bytes msg;
+            EOSLIB_SERIALIZE(game_message, (msg))
         };
     };
 
@@ -216,7 +225,16 @@ class game : public eosio::contract {
         emit_event(session, events::signidice_part_1_request{session.digest});
     }
 
+    void send_game_message(bytes && msg) {
+        emit_event(get_session(current_session), events::game_message{msg});
+    }
+
     void finish_game(asset player_payout) {
+        const auto & session = get_session(current_session);
+        finish_game(player_payout, std::nullopt);
+    }
+
+    void finish_game(asset player_payout, std::optional<bytes> && msg) {
         const auto & session = get_session(current_session);
 
         check_only_states(
@@ -254,7 +272,10 @@ class game : public eosio::contract {
 
         notify_close_session(session);
 
-        emit_event(session, events::game_finished{player_win});
+        if (msg.has_value())
+            emit_event(session, events::game_finished{player_win, msg.value()});
+        else
+            emit_event(session, events::game_finished{player_win});
 
         sessions.erase(session);
 
