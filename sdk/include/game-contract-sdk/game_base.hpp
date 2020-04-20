@@ -14,8 +14,7 @@
 
 #include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/dispatcher.hpp>
-
-#include <service.hpp>
+#include <game-contract-sdk/service.hpp>
 
 // abi generator hack
 #ifndef NOABI
