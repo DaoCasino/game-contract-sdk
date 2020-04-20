@@ -8,11 +8,11 @@
             "fields": [
                 {
                     "name": "action_type",
-                    "type": "uint8",
+                    "type": "uint8"
                 },
                 {
                     "name": "need_deposit",
-                    "type": "bool",
+                    "type": "bool"
                 },
             ]
         }
