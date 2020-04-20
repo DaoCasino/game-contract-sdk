@@ -214,6 +214,10 @@ protected:
         emit_event(session, events::signidice_part_1_request{ session.digest });
     }
 
+    void send_game_message(bytes && msg) {
+        emit_event(get_session(current_session), events::game_message { msg });
+    }
+
     void finish_game(asset player_payout) {
         finish_game(player_payout, std::nullopt);
     }
