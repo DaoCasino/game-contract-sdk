@@ -16,7 +16,7 @@ bool execute_action(eosio::name self, eosio::name code,
     // using malloc/free here potentially is not exception-safe, although WASM
     // doesn't support exceptions
     constexpr size_t max_stack_buffer_size = 512;
-    void *buffer = nullptr;
+    void * buffer = nullptr;
     if (size > 0) {
         buffer = max_stack_buffer_size < size ? malloc(size) : alloca(size);
         read_action_data(buffer, size);

@@ -127,36 +127,39 @@ class game_tester : public TESTER {
 
         abi_def abi;
         abi_serializer abi_s;
-        const auto &accnt = control->db().get<account_object, by_name>(account);
+        const auto & accnt =
+            control->db().get<account_object, by_name>(account);
         abi_serializer::to_abi(accnt.abi, abi);
         abi_s.set_abi(abi, abi_serializer_max_time);
         abi_ser.insert({account, abi_s});
     }
 
-    action_result create_currency(const name &contract, const name &manager,
-                                  const asset &maxsupply) {
+    action_result create_currency(const name & contract, const name & manager,
+                                  const asset & maxsupply) {
         auto act = mutable_variant_object()("issuer", manager)("maximum_supply",
                                                                maxsupply);
 
         return push_action(contract, N(create), contract, act);
     }
 
-    action_result issue(const name &to, const asset &amount) {
+    action_result issue(const name & to, const asset & amount) {
         return push_action(
             N(eosio.token), N(issue), config::system_account_name,
             mutable_variant_object()("to", to)("quantity", amount)("memo", ""));
     }
 
-    action_result transfer(const name &from, const name &to,
-                           const asset &amount, const std::string &memo = "") {
+    action_result transfer(const name & from, const name & to,
+                           const asset & amount,
+                           const std::string & memo = "") {
         return push_action(N(eosio.token), N(transfer), from,
                            mutable_variant_object()("from", from)("to", to)(
                                "quantity", amount)("memo", memo));
     }
 
-    action_result push_action(const action_name &contract,
-                              const action_name &name, const action_name &actor,
-                              const variant_object &data) {
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const action_name & actor,
+                              const variant_object & data) {
         string action_type_name = abi_ser[contract].get_action_type(name);
 
         action act;
@@ -168,11 +171,11 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
-    action_result push_action(const action_name &contract,
-                              const action_name &name,
-                              const permission_level &auth,
-                              const permission_level &key,
-                              const variant_object &data) {
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const permission_level & auth,
+                              const permission_level & key,
+                              const variant_object & data) {
         using namespace eosio;
         using namespace eosio::chain;
 
@@ -193,7 +196,7 @@ class game_tester : public TESTER {
 
         try {
             push_transaction(trx);
-        } catch (const fc::exception &ex) {
+        } catch (const fc::exception & ex) {
             edump((ex.to_detail_string()));
             return error(ex.top_message()); // top_message() is assumed by many
                                             // tests; otherwise they fail
@@ -203,10 +206,10 @@ class game_tester : public TESTER {
         return success();
     }
 
-    action_result push_action(const action_name &contract,
-                              const action_name &name,
-                              const permission_level &auth,
-                              const variant_object &data) {
+    action_result push_action(const action_name & contract,
+                              const action_name & name,
+                              const permission_level & auth,
+                              const variant_object & data) {
         return push_action(contract, name, auth, auth, data);
     }
 
@@ -222,7 +225,7 @@ class game_tester : public TESTER {
         return rsa;
     }
 
-    std::string rsa_sign(const RSA_ptr &rsa, const sha256 &digest) {
+    std::string rsa_sign(const RSA_ptr & rsa, const sha256 & digest) {
         bytes signature;
         signature.resize(RSA_size(rsa.get()));
         uint32_t len;
@@ -231,14 +234,14 @@ class game_tester : public TESTER {
         return fc::base64_encode(signature.data(), signature.size());
     }
 
-    std::string rsa_pem_pubkey(const RSA_ptr &rsa) {
+    std::string rsa_pem_pubkey(const RSA_ptr & rsa) {
         auto pkey = EVP_PKEY_ptr(EVP_PKEY_new(), ::EVP_PKEY_free);
         EVP_PKEY_set1_RSA(pkey.get(), rsa.get());
 
         auto mem = BIO_ptr(BIO_new(BIO_s_mem()), ::BIO_free);
         PEM_write_bio_PUBKEY(mem.get(), pkey.get());
 
-        BUF_MEM *bio_buf;
+        BUF_MEM * bio_buf;
         BIO_get_mem_ptr(mem.get(), &bio_buf);
 
         std::stringstream ss({bio_buf->data, bio_buf->length});
@@ -391,12 +394,12 @@ class game_tester : public TESTER {
 
 } // namespace testing
 
-void translate_fc_exception(const fc::exception &e) {
+void translate_fc_exception(const fc::exception & e) {
     std::cerr << "\033[33m" << e.to_detail_string() << "\033[0m" << std::endl;
     BOOST_TEST_FAIL("Caught Unexpected Exception");
 }
 
-boost::unit_test::test_suite *init_unit_test_suite(int argc, char *argv[]) {
+boost::unit_test::test_suite * init_unit_test_suite(int argc, char * argv[]) {
     // Turn off blockchain logging if no --verbose parameter is not added
     // To have verbose enabled, call "tests/chain_test -- --verbose"
     bool is_verbose = false;

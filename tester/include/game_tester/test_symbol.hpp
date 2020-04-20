@@ -11,7 +11,7 @@
     (::eosio::chain::string_to_symbol_c(CORE_SYM_PRECISION, CORE_SYM_NAME))
 
 struct core_sym {
-    static inline eosio::chain::asset from_string(const std::string &s) {
+    static inline eosio::chain::asset from_string(const std::string & s) {
         return eosio::chain::asset::from_string(s + " " CORE_SYM_NAME);
     }
 };

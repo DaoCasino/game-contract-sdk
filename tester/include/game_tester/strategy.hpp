@@ -16,10 +16,10 @@ using action_t = std::function<Result(game_tester &, const session_id_t)>;
 
 class Node {
   public:
-    explicit Node(action_t &&action) : _action(std::move(action)) {}
+    explicit Node(action_t && action) : _action(std::move(action)) {}
 
-    std::shared_ptr<Node> traversal(const game_tester &tester) {
-        for (const auto &[condition, child] : _children) {
+    std::shared_ptr<Node> traversal(const game_tester & tester) {
+        for (const auto & [condition, child] : _children) {
             if (condition(tester)) {
                 return child;
             }
@@ -28,19 +28,19 @@ class Node {
         return nullptr;
     }
 
-    std::shared_ptr<Node> push_child(condition_t &&condition,
-                                     action_t &&action) {
+    std::shared_ptr<Node> push_child(condition_t && condition,
+                                     action_t && action) {
         push_child(std::move(condition),
                    std::make_shared<Node>(std::move(action)));
         return _children.back().second;
     }
 
-    void push_child(condition_t &&condition,
-                    const std::shared_ptr<Node> &new_child) {
+    void push_child(condition_t && condition,
+                    const std::shared_ptr<Node> & new_child) {
         _children.emplace_back(std::move(condition), new_child);
     }
 
-    const action_t &get_action() { return _action; }
+    const action_t & get_action() { return _action; }
 
   private:
     action_t _action;
@@ -50,7 +50,7 @@ class Node {
 };
 
 struct Graph {
-    explicit Graph(action_t &&root_action)
+    explicit Graph(action_t && root_action)
         : root(std::make_shared<strategy::Node>(std::move(root_action))) {}
 
     std::shared_ptr<Node> root;
@@ -58,13 +58,15 @@ struct Graph {
 
 class Executor {
   public:
-    explicit Executor(Graph &&graph) : _graph(graph) {}
+    explicit Executor(Graph && graph) : _graph(graph) {}
 
-    uint process_strategy(
-        game_tester &tester, const uint run_count, const uint limit_per_run,
-        std::function<session_id_t(game_tester &, const uint)> &&session_create,
-        std::function<void(game_tester &, const session_id_t)>
-            &&session_close) {
+    uint
+    process_strategy(game_tester & tester, const uint run_count,
+                     const uint limit_per_run,
+                     std::function<session_id_t(game_tester &, const uint)> &&
+                         session_create,
+                     std::function<void(game_tester &, const session_id_t)> &&
+                         session_close) {
 
         for (uint run = 0; run != run_count; ++run) {
             const auto session_id = session_create(tester, run);
@@ -80,7 +82,7 @@ class Executor {
     }
 
   private:
-    static bool exectute_to_end(game_tester &tester,
+    static bool exectute_to_end(game_tester & tester,
                                 std::shared_ptr<Node> current,
                                 const session_id_t session_id, uint limit) {
 
@@ -98,9 +100,9 @@ class Executor {
         return false;
     }
 
-    static strategy::Result process_next_step(game_tester &tester,
+    static strategy::Result process_next_step(game_tester & tester,
                                               const session_id_t session_id,
-                                              std::shared_ptr<Node> &current) {
+                                              std::shared_ptr<Node> & current) {
 
         if (current != nullptr) {
             const auto result = current->get_action()(tester, session_id);

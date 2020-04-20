@@ -24,12 +24,12 @@ class proto_dice_tester : public game_tester {
     }
 
     double get_rtp(uint64_t run_count,
-                   std::function<uint32_t()> &&bet_number_generator) {
+                   std::function<uint32_t()> && bet_number_generator) {
         const auto player_name = N(player);
         create_player(player_name);
         link_game(player_name, game_name);
 
-        const auto to_double = [](const asset &value) -> double {
+        const auto to_double = [](const asset & value) -> double {
             return double(value.get_amount()) / value.precision();
         };
 
@@ -40,12 +40,12 @@ class proto_dice_tester : public game_tester {
         const double start_player_balance = to_double(get_balance(player_name));
 
         auto graph = strategy::Graph(
-            [&](game_tester &tester, const uint32_t session_id) {
+            [&](game_tester & tester, const uint32_t session_id) {
                 return strategy::Result::Continue;
             });
 
-        graph.root->push_child([](const auto &tester) -> bool { return true; },
-                               [&](auto &tester, const uint32_t ses_id) {
+        graph.root->push_child([](const auto & tester) -> bool { return true; },
+                               [&](auto & tester, const uint32_t ses_id) {
                                    tester.game_action(game_name, ses_id, 0,
                                                       {bet_number_generator()});
                                    return strategy::Result::Continue;
@@ -56,11 +56,11 @@ class proto_dice_tester : public game_tester {
         const uint32_t bet = 1;
         executor.process_strategy(
             *this, run_count, 10,
-            [](game_tester &tester, const uint run) {
+            [](game_tester & tester, const uint run) {
                 return tester.new_game_session(game_name, player_name,
                                                casino_id, STRSYM("1.0000"));
             },
-            [&](game_tester &tester, const uint32_t session_id) {
+            [&](game_tester & tester, const uint32_t session_id) {
                 tester.signidice(game_name, session_id);
             });
 
