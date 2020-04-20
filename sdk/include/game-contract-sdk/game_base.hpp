@@ -215,6 +215,10 @@ protected:
     }
 
     void finish_game(asset player_payout) {
+        finish_game(player_payout, std::nullopt);
+    }
+
+    void finish_game(asset player_payout, std::optional<bytes> && msg) {
         const auto& session = get_session(current_session);
 
         check_only_states(session, { state::req_action, state::req_signidice_part_2 },
@@ -252,7 +256,10 @@ protected:
 
         notify_close_session(session);
 
-        emit_event(session, events::game_finished { player_win });
+        if (msg.has_value())
+            emit_event(session, events::game_finished { player_win, msg.value() });
+        else
+            emit_event(session, events::game_finished { player_win });
 
         sessions.erase(session);
 
