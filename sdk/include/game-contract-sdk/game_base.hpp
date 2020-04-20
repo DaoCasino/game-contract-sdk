@@ -90,14 +90,23 @@ public:
             static constexpr uint32_t type { 4u };
 
             asset player_win_amount;
-            EOSLIB_SERIALIZE(game_finished, (player_win_amount))
+            bytes msg;
+            EOSLIB_SERIALIZE(game_finished, (player_win_amount)(msg))
         };
 
         struct game_failed {
             static constexpr uint32_t type { 5u };
 
             asset player_win_amount;
-            EOSLIB_SERIALIZE(game_failed, (player_win_amount))
+            bytes msg;
+            EOSLIB_SERIALIZE(game_failed, (player_win_amount)(msg))
+        };
+
+        struct game_message {
+            static constexpr uint32_t type { 6u };
+
+            bytes msg;
+            EOSLIB_SERIALIZE(game_message, (msg))
         };
     };
 

@@ -9,6 +9,10 @@
                 {
                     "name": "player_win_amount",
                     "type": "asset",
+                },
+                {
+                    "name": "msg",
+                    "type": "bytes",
                 }
             ]
         }
