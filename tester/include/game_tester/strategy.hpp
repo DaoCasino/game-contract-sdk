@@ -28,15 +28,12 @@ class Node {
         return nullptr;
     }
 
-    std::shared_ptr<Node> push_child(condition_t && condition,
-                                     action_t && action) {
-        push_child(std::move(condition),
-                   std::make_shared<Node>(std::move(action)));
+    std::shared_ptr<Node> push_child(condition_t && condition, action_t && action) {
+        push_child(std::move(condition), std::make_shared<Node>(std::move(action)));
         return _children.back().second;
     }
 
-    void push_child(condition_t && condition,
-                    const std::shared_ptr<Node> & new_child) {
+    void push_child(condition_t && condition, const std::shared_ptr<Node> & new_child) {
         _children.emplace_back(std::move(condition), new_child);
     }
 
@@ -50,8 +47,7 @@ class Node {
 };
 
 struct Graph {
-    explicit Graph(action_t && root_action)
-        : root(std::make_shared<strategy::Node>(std::move(root_action))) {}
+    explicit Graph(action_t && root_action) : root(std::make_shared<strategy::Node>(std::move(root_action))) {}
 
     std::shared_ptr<Node> root;
 };
@@ -60,19 +56,14 @@ class Executor {
   public:
     explicit Executor(Graph && graph) : _graph(graph) {}
 
-    uint
-    process_strategy(game_tester & tester, const uint run_count,
-                     const uint limit_per_run,
-                     std::function<session_id_t(game_tester &, const uint)> &&
-                         session_create,
-                     std::function<void(game_tester &, const session_id_t)> &&
-                         session_close) {
+    uint process_strategy(game_tester & tester, const uint run_count, const uint limit_per_run,
+                          std::function<session_id_t(game_tester &, const uint)> && session_create,
+                          std::function<void(game_tester &, const session_id_t)> && session_close) {
 
         for (uint run = 0; run != run_count; ++run) {
             const auto session_id = session_create(tester, run);
 
-            if (!exectute_to_end(tester, _graph.root, session_id,
-                                 limit_per_run))
+            if (!exectute_to_end(tester, _graph.root, session_id, limit_per_run))
                 return run;
 
             session_close(tester, session_id);
@@ -82,9 +73,8 @@ class Executor {
     }
 
   private:
-    static bool exectute_to_end(game_tester & tester,
-                                std::shared_ptr<Node> current,
-                                const session_id_t session_id, uint limit) {
+    static bool exectute_to_end(game_tester & tester, std::shared_ptr<Node> current, const session_id_t session_id,
+                                uint limit) {
 
         while (limit-- != 0) {
             switch (process_next_step(tester, session_id, current)) {
@@ -100,8 +90,7 @@ class Executor {
         return false;
     }
 
-    static strategy::Result process_next_step(game_tester & tester,
-                                              const session_id_t session_id,
+    static strategy::Result process_next_step(game_tester & tester, const session_id_t session_id,
                                               std::shared_ptr<Node> & current) {
 
         if (current != nullptr) {

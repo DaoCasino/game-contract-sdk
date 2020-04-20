@@ -3,20 +3,15 @@
 namespace proto_dice {
 
 void proto_dice::check_params(uint64_t ses_id) {
-    eosio::check(get_param_value(ses_id, min_bet_param_type) != std::nullopt,
-                 "absent min bet param");
-    eosio::check(get_param_value(ses_id, max_bet_param_type) != std::nullopt,
-                 "absent max bet param");
-    eosio::check(get_param_value(ses_id, max_payout_param_type) != std::nullopt,
-                 "absent max payout param");
+    eosio::check(get_param_value(ses_id, min_bet_param_type) != std::nullopt, "absent min bet param");
+    eosio::check(get_param_value(ses_id, max_bet_param_type) != std::nullopt, "absent max bet param");
+    eosio::check(get_param_value(ses_id, max_payout_param_type) != std::nullopt, "absent max payout param");
 }
 
 void proto_dice::check_bet(uint64_t ses_id) {
     const auto & session = get_session(ses_id);
-    const auto min_bet =
-        asset(*get_param_value(ses_id, min_bet_param_type), core_symbol);
-    const auto max_bet =
-        asset(*get_param_value(ses_id, max_bet_param_type), core_symbol);
+    const auto min_bet = asset(*get_param_value(ses_id, min_bet_param_type), core_symbol);
+    const auto max_bet = asset(*get_param_value(ses_id, max_bet_param_type), core_symbol);
 
     eosio::check(min_bet <= session.deposit, "deposit less than min bet");
     eosio::check(max_bet >= session.deposit, "deposit greater than max bet");
@@ -24,8 +19,7 @@ void proto_dice::check_bet(uint64_t ses_id) {
 
 asset proto_dice::calc_max_win(uint64_t ses_id, game_sdk::param_t num) {
     const auto & session = get_session(ses_id);
-    auto max_profit =
-        asset(*get_param_value(ses_id, max_payout_param_type), core_symbol);
+    auto max_profit = asset(*get_param_value(ses_id, max_payout_param_type), core_symbol);
 
     auto all_range = 100;
     auto win_chance = all_range - num;
@@ -43,10 +37,8 @@ void proto_dice::on_new_game(uint64_t ses_id) {
     require_action(roll_action_type);
 }
 
-void proto_dice::on_action(uint64_t ses_id, uint16_t type,
-                           std::vector<game_sdk::param_t> params) {
-    eosio::check(type == roll_action_type,
-                 "allowed only roll action with type 0");
+void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk::param_t> params) {
+    eosio::check(type == roll_action_type, "allowed only roll action with type 0");
     eosio::check(params.size() == 1, "params amount should be 1");
     eosio::print("player number: ", params[0], "\n");
     eosio::check(params[0] > 0, "number should be more than 0");

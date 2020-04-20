@@ -8,8 +8,7 @@
 namespace service {
 using eosio::checksum256;
 
-template <typename T, class = std::enable_if_t<std::is_unsigned<T>::value>>
-T cut_to(const checksum256 & input) {
+template <typename T, class = std::enable_if_t<std::is_unsigned<T>::value>> T cut_to(const checksum256 & input) {
     return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
 }
 

@@ -7,8 +7,7 @@ void stub::on_new_game(uint64_t ses_id) {
     require_action(stub_game_action_type);
 }
 
-void stub::on_action(uint64_t ses_id, uint16_t type,
-                     std::vector<game_sdk::param_t> params) {
+void stub::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk::param_t> params) {
     // always require random
     require_random();
 }

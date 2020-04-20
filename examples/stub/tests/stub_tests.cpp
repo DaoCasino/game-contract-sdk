@@ -31,8 +31,7 @@ BOOST_FIXTURE_TEST_CASE(new_session_test, stub_tester) try {
     transfer(N(eosio), player_name, STRSYM("10.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     auto session = get_game_session(game_name, ses_id);
 
@@ -58,8 +57,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, stub_tester) try {
     auto player_balance_before = get_balance(player_name);
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
 
@@ -76,10 +74,8 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, stub_tester) try {
 
     session = get_game_session(game_name, ses_id);
     BOOST_REQUIRE_EQUAL(session.is_null(), true);
-    BOOST_REQUIRE_EQUAL(player_balance_before - player_bet,
-                        player_balance_after);
-    BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet,
-                        casino_balance_after);
+    BOOST_REQUIRE_EQUAL(player_balance_before - player_bet, player_balance_after);
+    BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
 }
 FC_LOG_AND_RETHROW()
 
@@ -96,16 +92,12 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, stub_tester) try {
     auto casino_balance_before = get_balance(casino_name);
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
 
-    BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(close), {platform_name, N(active)},
-                    mvo()("req_id", ses_id)),
-        wasm_assert_msg(
-            "session isn't expired, only expired session can be closed"));
+    BOOST_REQUIRE_EQUAL(push_action(game_name, N(close), {platform_name, N(active)}, mvo()("req_id", ses_id)),
+                        wasm_assert_msg("session isn't expired, only expired session can be closed"));
 
     produce_block(fc::seconds(game_session_ttl + 1));
 
@@ -117,10 +109,8 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, stub_tester) try {
     auto player_balance_after = get_balance(player_name);
     auto casino_balance_after = get_balance(casino_name);
 
-    BOOST_REQUIRE_EQUAL(player_balance_before,
-                        player_balance_after + player_bet);
-    BOOST_REQUIRE_EQUAL(casino_balance_before,
-                        casino_balance_after - player_bet);
+    BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after + player_bet);
+    BOOST_REQUIRE_EQUAL(casino_balance_before, casino_balance_after - player_bet);
 }
 FC_LOG_AND_RETHROW()
 
@@ -137,17 +127,13 @@ BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, stub_tester) try {
     auto player_bet = STRSYM("5.0000");
     transfer(player_name, game_name, player_bet, std::to_string(ses_id));
 
-    BOOST_TEST_REQUIRE(
-        push_action(game_name, N(newgame), {player_name, N(game)},
-                    {casino_name, N(active)},
-                    mvo()("req_id", ses_id)("casino_id", casino_id))
-            .find("but does not have signatures for it") != std::string::npos);
+    BOOST_TEST_REQUIRE(push_action(game_name, N(newgame), {player_name, N(game)}, {casino_name, N(active)},
+                                   mvo()("req_id", ses_id)("casino_id", casino_id))
+                           .find("but does not have signatures for it") != std::string::npos);
 
-    BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(newgame), {casino_name, N(active)},
-                    {casino_name, N(active)},
-                    mvo()("req_id", ses_id)("casino_id", casino_id)),
-        "missing authority of player/game");
+    BOOST_REQUIRE_EQUAL(push_action(game_name, N(newgame), {casino_name, N(active)}, {casino_name, N(active)},
+                                    mvo()("req_id", ses_id)("casino_id", casino_id)),
+                        "missing authority of player/game");
 }
 FC_LOG_AND_RETHROW()
 
@@ -161,21 +147,14 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, stub_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
-    BOOST_TEST_REQUIRE(
-        push_action(game_name, N(gameaction), {player_name, N(game)},
-                    {casino_name, N(active)},
-                    mvo()("req_id", ses_id)("type", 0)(
-                        "params", std::vector<uint32_t>{30}))
-            .find("but does not have signatures for it") != std::string::npos);
+    BOOST_TEST_REQUIRE(push_action(game_name, N(gameaction), {player_name, N(game)}, {casino_name, N(active)},
+                                   mvo()("req_id", ses_id)("type", 0)("params", std::vector<uint32_t>{30}))
+                           .find("but does not have signatures for it") != std::string::npos);
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction),
-                                    {casino_name, N(active)},
-                                    {casino_name, N(active)},
-                                    mvo()("req_id", ses_id)("type", 0)(
-                                        "params", std::vector<uint32_t>{30})),
+    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {casino_name, N(active)}, {casino_name, N(active)},
+                                    mvo()("req_id", ses_id)("type", 0)("params", std::vector<uint32_t>{30})),
                         "missing authority of player/game");
 }
 FC_LOG_AND_RETHROW()
@@ -190,25 +169,21 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, stub_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     game_action(game_name, ses_id, 0, {30});
 
-    BOOST_REQUIRE_EQUAL(
-        transfer(player_name, game_name, player_bet, std::to_string(ses_id)),
-        wasm_assert_msg("state should be 'req_deposit'"));
+    BOOST_REQUIRE_EQUAL(transfer(player_name, game_name, player_bet, std::to_string(ses_id)),
+                        wasm_assert_msg("state should be 'req_deposit'"));
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(sgdicefirst),
-                                    {platform_name, N(signidice)},
-                                    mvo()("req_id", ses_id)("sign", sign_1)),
-                        success());
-
     BOOST_REQUIRE_EQUAL(
-        transfer(player_name, game_name, player_bet, std::to_string(ses_id)),
-        wasm_assert_msg("state should be 'req_deposit'"));
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        success());
+
+    BOOST_REQUIRE_EQUAL(transfer(player_name, game_name, player_bet, std::to_string(ses_id)),
+                        wasm_assert_msg("state should be 'req_deposit'"));
 }
 FC_LOG_AND_RETHROW()
 
@@ -222,31 +197,23 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, stub_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     game_action(game_name, ses_id, 0, {30});
 
-    BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(gameaction), {player_name, N(game)},
-                    {platform_name, N(active)},
-                    mvo()("req_id", ses_id)("type", 0)(
-                        "params", std::vector<uint32_t>{30})),
-        wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
+    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {player_name, N(game)}, {platform_name, N(active)},
+                                    mvo()("req_id", ses_id)("type", 0)("params", std::vector<uint32_t>{30})),
+                        wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(sgdicefirst),
-                                    {platform_name, N(signidice)},
-                                    mvo()("req_id", ses_id)("sign", sign_1)),
-                        success());
-
     BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(gameaction), {player_name, N(game)},
-                    {platform_name, N(active)},
-                    mvo()("req_id", ses_id)("type", 0)(
-                        "params", std::vector<uint32_t>{30})),
-        wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        success());
+
+    BOOST_REQUIRE_EQUAL(push_action(game_name, N(gameaction), {player_name, N(game)}, {platform_name, N(active)},
+                                    mvo()("req_id", ses_id)("type", 0)("params", std::vector<uint32_t>{30})),
+                        wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
 }
 FC_LOG_AND_RETHROW()
 
@@ -260,26 +227,22 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, stub_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
     BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)},
-                    mvo()("req_id", ses_id)("sign", sign_1)),
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
         wasm_assert_msg("state should be 'req_signidice_part_1'"));
 
     game_action(game_name, ses_id, 0, {30});
 
-    BOOST_REQUIRE_EQUAL(push_action(game_name, N(sgdicefirst),
-                                    {platform_name, N(signidice)},
-                                    mvo()("req_id", ses_id)("sign", sign_1)),
-                        success());
+    BOOST_REQUIRE_EQUAL(
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        success());
 
     BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)},
-                    mvo()("req_id", ses_id)("sign", sign_1)),
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
         wasm_assert_msg("state should be 'req_signidice_part_1'"));
 }
 FC_LOG_AND_RETHROW()
@@ -294,21 +257,18 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, stub_tester) try {
     transfer(N(eosio), casino_name, STRSYM("1000.0000"));
 
     auto player_bet = STRSYM("5.0000");
-    auto ses_id =
-        new_game_session(game_name, player_name, casino_id, player_bet);
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign = rsa_sign(rsa_keys.at(platform_name), digest);
     BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(sgdicesecond), {casino_name, N(signidice)},
-                    mvo()("req_id", ses_id)("sign", sign)),
+        push_action(game_name, N(sgdicesecond), {casino_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign)),
         wasm_assert_msg("state should be 'req_signidice_part_2'"));
 
     game_action(game_name, ses_id, 0, {30});
 
     BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(sgdicesecond), {casino_name, N(signidice)},
-                    mvo()("req_id", ses_id)("sign", sign)),
+        push_action(game_name, N(sgdicesecond), {casino_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign)),
         wasm_assert_msg("state should be 'req_signidice_part_2'"));
 }
 FC_LOG_AND_RETHROW()
