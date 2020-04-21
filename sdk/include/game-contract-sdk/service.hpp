@@ -75,4 +75,18 @@ private:
     std::array<uint64_t, 4> _s;
 };
 
+template <class RandomIt>
+void shuffle(RandomIt first, RandomIt last, PRNG && prng) {
+    shuffle(first, last, prng);
+}
+
+template <class RandomIt>
+void shuffle(RandomIt first, RandomIt last, PRNG & prng) {
+    typename std::iterator_traits<RandomIt>::difference_type i, n;
+    n = last - first;
+    for (i = n - 1; i > 0; --i) {
+        std::swap(first[i], first[prng.next() % (i+1)]);
+    }
+}
+
 } // namespace service
