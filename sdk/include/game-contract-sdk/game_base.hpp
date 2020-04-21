@@ -217,11 +217,15 @@ protected:
         emit_event(get_session(current_session), events::game_message { msg });
     }
 
+    void send_game_message(std::vector<param_t> && msg) {
+        send_game_message(eosio::pack(msg));
+    }
+
     void finish_game(asset player_payout) {
         finish_game(player_payout, std::nullopt);
     }
 
-    void finish_game(asset player_payout, std::optional<bytes> && msg) {
+    void finish_game(asset player_payout, std::optional<std::vector<param_t>> && msg) {
         const auto& session = get_session(current_session);
 
         check_only_states(session, { state::req_action, state::req_signidice_part_2 },
@@ -240,8 +244,7 @@ protected:
             transfer_from_casino(casino_name, session.player, player_win);
             // transfer back deposit
             transfer(session.player, session.deposit, "player win[game]");
-        }
-        else {
+        } else {
             /* player payout more than 0 */
             if (player_payout.amount > 0)
                 transfer(session.player, player_payout, "player win[game]");
@@ -260,7 +263,7 @@ protected:
         notify_close_session(session);
 
         if (msg.has_value())
-            emit_event(session, events::game_finished { player_win, msg.value() });
+            emit_event(session, events::game_finished { player_win, eosio::pack(msg.value()) });
         else
             emit_event(session, events::game_finished { player_win });
 
