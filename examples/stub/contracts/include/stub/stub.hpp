@@ -13,7 +13,7 @@ class [[eosio::contract]] stub : public game_sdk::game {
     static constexpr uint16_t stub_game_action_type{0u};
 
   public:
-    stub(name receiver, name code, eosio::datastream<const char *> ds) : game(receiver, code, ds) {}
+    stub(name receiver, name code, eosio::datastream<const char*> ds) : game(receiver, code, ds) {}
 
     virtual void on_new_game(uint64_t ses_id) final;
 

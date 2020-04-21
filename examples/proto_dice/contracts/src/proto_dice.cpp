@@ -9,7 +9,7 @@ void proto_dice::check_params(uint64_t ses_id) {
 }
 
 void proto_dice::check_bet(uint64_t ses_id) {
-    const auto & session = get_session(ses_id);
+    const auto& session = get_session(ses_id);
     const auto min_bet = asset(*get_param_value(ses_id, min_bet_param_type), core_symbol);
     const auto max_bet = asset(*get_param_value(ses_id, max_bet_param_type), core_symbol);
 
@@ -18,7 +18,7 @@ void proto_dice::check_bet(uint64_t ses_id) {
 }
 
 asset proto_dice::calc_max_win(uint64_t ses_id, game_sdk::param_t num) {
-    const auto & session = get_session(ses_id);
+    const auto& session = get_session(ses_id);
     auto max_profit = asset(*get_param_value(ses_id, max_payout_param_type), core_symbol);
 
     auto all_range = 100;
@@ -44,7 +44,7 @@ void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk:
     eosio::check(params[0] > 0, "number should be more than 0");
     eosio::check(params[0] < 100, "number should be less than 100");
 
-    rolls.emplace(get_self(), [&](auto & row) {
+    rolls.emplace(get_self(), [&](auto& row) {
         row.ses_id = ses_id;
         row.number = uint32_t(params[0]);
     });
@@ -55,8 +55,8 @@ void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk:
 }
 
 void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
-    const auto & roll = rolls.get(ses_id);
-    const auto & session = get_session(ses_id);
+    const auto& roll = rolls.get(ses_id);
+    const auto& session = get_session(ses_id);
     const auto rand_number = service::cut_to<uint32_t>(rand) % 100;
 
     eosio::print("rand num: ", rand_number, "\n");

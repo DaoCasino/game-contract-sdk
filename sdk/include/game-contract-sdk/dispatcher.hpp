@@ -15,14 +15,14 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
     // using malloc/free here potentially is not exception-safe, although WASM
     // doesn't support exceptions
     constexpr size_t max_stack_buffer_size = 512;
-    void * buffer = nullptr;
+    void* buffer = nullptr;
     if (size > 0) {
         buffer = max_stack_buffer_size < size ? malloc(size) : alloca(size);
         read_action_data(buffer, size);
     }
 
     std::tuple<std::decay_t<Args>...> args;
-    datastream<const char *> ds((char *)buffer, size);
+    datastream<const char*> ds((char*)buffer, size);
     ds >> args;
 
     T inst(self, code, ds);

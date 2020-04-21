@@ -31,7 +31,7 @@ class [[eosio::contract]] proto_dice : public game_sdk::game {
     using roll_table = eosio::multi_index<"roll"_n, roll_row>;
 
   public:
-    proto_dice(name receiver, name code, eosio::datastream<const char *> ds)
+    proto_dice(name receiver, name code, eosio::datastream<const char*> ds)
         : game(receiver, code, ds), rolls(_self, _self.value) {}
 
     virtual void on_new_game(uint64_t ses_id) final;
