@@ -377,9 +377,12 @@ void translate_fc_exception(const fc::exception& e) {
 }
 
 boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
+#ifdef IS_DEBUG
+    bool is_verbose = true;
+#else
+    bool is_verbose = false;
     // Turn off blockchain logging if no --verbose parameter is not added
     // To have verbose enabled, call "tests/chain_test -- --verbose"
-    bool is_verbose = false;
     std::string verbose_arg = "--verbose";
     for (int i = 0; i < argc; i++) {
         if (verbose_arg == argv[i]) {
@@ -387,8 +390,9 @@ boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
             break;
         }
     }
-    if (!is_verbose)
-        fc::logger::get(DEFAULT_LOGGER).set_log_level(fc::log_level::off);
+#endif
+
+    fc::logger::get(DEFAULT_LOGGER).set_log_level(is_verbose ? fc::log_level::debug : fc::log_level::off);
 
     // Register fc::exception translator
     boost::unit_test::unit_test_monitor.template register_exception_translator<fc::exception>(&translate_fc_exception);

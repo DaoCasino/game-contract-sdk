@@ -7,6 +7,8 @@ include(ExternalProject)
 set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
+option(IS_DEBUG "Is Debug" OFF)
+
 set(GAME_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../) # Path to game SDK project root
 
 message(STATUS "Building proto_dice example contract")
@@ -17,6 +19,7 @@ ExternalProject_Add(
     CMAKE_ARGS
         -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
         -DGAME_SDK_PATH=${GAME_SDK_PATH}
+        -DIS_DEBUG=${IS_DEBUG}
     PATCH_COMMAND ""
     TEST_COMMAND ""
     INSTALL_COMMAND ""
@@ -40,6 +43,7 @@ ExternalProject_Add(
         -DLLVM_DIR=${LLVM_DIR}
         -Deosio_DIR=${CMAKE_MODULE_PATH}
         -DGAME_SDK_PATH=${GAME_SDK_PATH}
+        -DIS_DEBUG=${IS_DEBUG}
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/tests
     BUILD_ALWAYS 1
