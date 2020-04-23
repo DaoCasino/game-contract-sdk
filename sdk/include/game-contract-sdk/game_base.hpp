@@ -124,7 +124,7 @@ class game : public eosio::contract {
 #ifdef IS_DEBUG
     /* debug table */
     struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
-        std::queue<checksum256> pseudo_queue;
+        std::list<checksum256> pseudo_queue;
     };
 
     using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
@@ -296,7 +296,7 @@ class game : public eosio::contract {
 
 #ifdef IS_DEBUG
     void push_next_random(checksum256 && next_random) {
-        global_debug.pseudo_queue.push(next_random);
+        global_debug.pseudo_queue.push_back(next_random);
     }
 #endif
 
@@ -453,7 +453,7 @@ class game : public eosio::contract {
 #ifdef IS_DEBUG
         if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
             const checksum256 new_digest = pseudo_queue.front();
-            pseudo_queue.pop();
+            pseudo_queue.pop_front();
             on_random(ses_id, new_digest);
             return;
         }
