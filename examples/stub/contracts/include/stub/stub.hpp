@@ -4,18 +4,16 @@
 
 namespace stub {
 
-using eosio::name;
 using eosio::checksum256;
+using eosio::name;
 
 // simple stub game
-class [[eosio::contract]] stub: public game_sdk::game {
-public:
-    static constexpr uint16_t stub_game_action_type { 0u };
+class [[eosio::contract]] stub : public game_sdk::game {
+  public:
+    static constexpr uint16_t stub_game_action_type{0u};
 
-public:
-    stub(name receiver, name code, eosio::datastream<const char*> ds):
-        game(receiver, code, ds)
-    { }
+  public:
+    stub(name receiver, name code, eosio::datastream<const char*> ds) : game(receiver, code, ds) {}
 
     virtual void on_new_game(uint64_t ses_id) final;
 

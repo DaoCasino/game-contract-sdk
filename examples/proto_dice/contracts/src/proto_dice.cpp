@@ -44,7 +44,7 @@ void proto_dice::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk:
     eosio::check(params[0] > 0, "number should be more than 0");
     eosio::check(params[0] < 100, "number should be less than 100");
 
-    rolls.emplace(get_self(), [&](auto& row){
+    rolls.emplace(get_self(), [&](auto& row) {
         row.ses_id = ses_id;
         row.number = uint32_t(params[0]);
     });

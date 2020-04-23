@@ -21,6 +21,7 @@ env=dev
 build_type=RelWithDebInfo
 #local_clang=n
 verbose=n
+is_debug=n
 build_tests=n
 
 usage() {
@@ -39,6 +40,7 @@ usage() {
   #echo "  --local-clang        : build and use a partucular version of Clang toolchain locally"
   echo "  --build-tests        : build tests"
   echo "  --verbose            : verbose build"
+  echo "  --debug              : is debug"
   echo
   echo "  -h, --help           : print this message"
 }
@@ -48,6 +50,7 @@ env:,\
 build-type:,\
 build-tests,\
 verbose,\
+debug,\
 help" -n "$PROGNAME" -- "$@" )"
 eval set -- "$OPTS"
 while true; do
@@ -57,6 +60,7 @@ while true; do
   #(--local-clang)  local_clang=y   ; shift   ; readonly local_clang ;;
   (--build-tests)  build_tests=y   ; shift   ; readonly build_tests ;;
   (--verbose)      verbose=y       ; shift   ; readonly verbose ;;
+  (--debug)        is_debug=y      ; shift   ; readonly is_debug ;;
   (-h|--help)      usage ; exit 0 ;;
   (--)             shift ; break ;;
   (*)              die "Invalid option: ${1:-}." ;;
@@ -87,6 +91,7 @@ cmake_flags=(
 )
 [[ -z "$boost_root" ]]    || cmake_flags+=(-D BOOST_ROOT="$boost_root")
 [[ "$build_tests" == n ]] || cmake_flags+=(-D BUILD_TESTS=on)
+[[ "$is_debug" == n ]] || cmake_flags+=(-DIS_DEBUG=on)
 
 make_flags=(-j "$ncores")
 [[ "$verbose" == n ]] || make_flags+=(VERBOSE=1)
