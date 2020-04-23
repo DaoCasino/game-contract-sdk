@@ -32,7 +32,7 @@ BOOST_FIXTURE_TEST_CASE(new_session_test, stub_tester) try {
 
     auto player_bet = STRSYM("5.0000");
     auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
-auto session = get_game_session(game_name, ses_id);
+    auto session = get_game_session(game_name, ses_id);
 
     BOOST_REQUIRE_EQUAL(session["req_id"].as<uint64_t>(), ses_id);
     BOOST_REQUIRE_EQUAL(session["casino_id"].as<uint64_t>(), casino_id);
