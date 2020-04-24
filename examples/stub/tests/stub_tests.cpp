@@ -15,8 +15,7 @@ class stub_tester : public game_tester {
 
         game_params_type game_params = {};
         deploy_game<stub_game>(game_name, game_params);
-    }
-};
+    } };
 
 const name stub_tester::game_name = N(stubgame);
 
@@ -45,6 +44,46 @@ FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(full_session_success_test, stub_tester) try {
     auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, STRSYM("10.0000"));
+    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
+
+    auto casino_balance_before = get_balance(casino_name);
+    auto player_balance_before = get_balance(player_name);
+
+    auto player_bet = STRSYM("5.0000");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+
+    BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
+
+    game_action(game_name, ses_id, 0, {0});
+
+    auto session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        3); // req_signidice_part_1 state
+
+    signidice(game_name, ses_id);
+
+    auto casino_balance_after = get_balance(casino_name);
+    auto player_balance_after = get_balance(player_name);
+
+    session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session.is_null(), true);
+    BOOST_REQUIRE_EQUAL(player_balance_before - player_bet, player_balance_after);
+    BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(full_session_pseudo_random_test, stub_tester) try {
+    auto player_name = N(player);
+
+    push_next_random(
+        game_name,
+        sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+    );
 
     create_player(player_name);
     link_game(player_name, game_name);

@@ -440,13 +440,13 @@ class game : public eosio::contract {
             obj.last_update = eosio::current_time_point();
         });
 
-    if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
-        const checksum256 new_digest = pseudo_queue.back();
-        pseudo_queue.pop_back();
-        on_random(ses_id, new_digest);
-        return;
-    }
-        on_random(ses_id, new_digest);
+        if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
+            const checksum256 new_digest = pseudo_queue.back();
+            pseudo_queue.pop_back();
+            on_random(ses_id, new_digest);
+        } else  {
+            on_random(ses_id, new_digest);
+        }
     }
 
     CONTRACT_ACTION(close)
