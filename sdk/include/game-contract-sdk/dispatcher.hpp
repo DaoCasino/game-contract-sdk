@@ -63,6 +63,8 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
             case "close"_n.value:                                                                                      \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close);                \
                 break;                                                                                                 \
+            case "pushnrandom"_n.value:                                                                                \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::push_next_random);     \
             default:                                                                                                   \
                 eosio::eosio_exit(1);                                                                                  \
             }                                                                                                          \

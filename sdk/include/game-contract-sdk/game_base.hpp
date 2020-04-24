@@ -285,11 +285,6 @@ class game : public eosio::contract {
         on_finish(current_session);
     }
 
-    CONTRACT_ACTION(pushnrandom)
-    void push_next_random(std::array<uint64_t, 4> && next_random) {
-        global_debug.pseudo_queue.emplace_back(checksum256(next_random));
-    }
-
     // new_max_win - total payout including deposit
     void update_max_win(asset new_max_win) {
         const auto& session = get_session(current_session);
@@ -344,6 +339,11 @@ class game : public eosio::contract {
                 row.state = static_cast<uint8_t>(state::req_action);
             });
         }
+    }
+
+    CONTRACT_ACTION(pushnrandom)
+    void push_next_random(checksum256 next_random) {
+        global_debug.pseudo_queue.emplace_back(checksum256(next_random));
     }
 
     /* contract actions */
