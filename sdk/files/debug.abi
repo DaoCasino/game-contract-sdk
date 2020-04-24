@@ -1,0 +1,18 @@
+{
+    "actions": [
+        {
+            "name": "pushnrandom",
+            "type": "push_next_random",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "debug",
+            "type": "debug_table",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ]
+}

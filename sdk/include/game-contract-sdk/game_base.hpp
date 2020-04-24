@@ -295,8 +295,9 @@ class game : public eosio::contract {
     }
 
 #ifdef IS_DEBUG
-    void push_next_random(checksum256 && next_random) {
-        global_debug.pseudo_queue.push_back(next_random);
+    CONTRACT_ACTION(pushnrandom)
+    void push_next_random(std::array<uint64_t, 4> && next_random) {
+        global_debug.pseudo_queue.emplace_back(checksum256(next_random));
     }
 #endif
 
@@ -451,12 +452,12 @@ class game : public eosio::contract {
         });
 
 #ifdef IS_DEBUG
-        if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
-            const checksum256 new_digest = pseudo_queue.front();
-            pseudo_queue.pop_front();
-            on_random(ses_id, new_digest);
-            return;
-        }
+    if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
+        const checksum256 new_digest = pseudo_queue.front();
+        pseudo_queue.pop_front();
+        on_random(ses_id, new_digest);
+        return;
+    }
 #endif
         on_random(ses_id, new_digest);
     }
