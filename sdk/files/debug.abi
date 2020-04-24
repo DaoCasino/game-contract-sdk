@@ -1,4 +1,26 @@
 {
+    "structs": [
+        {
+            "name": "push_next_random",
+            "base": "",
+            "fields": [
+                {
+                    "name": "next_random",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "debug_table",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pseudo_queue",
+                    "type": "checksum256[]"
+                }
+            ]
+        }
+    ],
     "actions": [
         {
             "name": "pushnrandom",

@@ -122,7 +122,7 @@ class game : public eosio::contract {
 
     /* debug table */
     struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
-        std::list<checksum256> pseudo_queue;
+        std::vector<checksum256> pseudo_queue;
     };
 
     using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
@@ -441,8 +441,8 @@ class game : public eosio::contract {
         });
 
     if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
-        const checksum256 new_digest = pseudo_queue.front();
-        pseudo_queue.pop_front();
+        const checksum256 new_digest = pseudo_queue.back();
+        pseudo_queue.pop_back();
         on_random(ses_id, new_digest);
         return;
     }

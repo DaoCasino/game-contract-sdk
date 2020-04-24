@@ -338,7 +338,6 @@ class game_tester : public TESTER {
         // format-clang on
     }
 
-#ifdef IS_DEBUG
     void push_next_random(name game_name, sha256 && next_random) {
         BOOST_REQUIRE_EQUAL(
             push_action(
@@ -349,7 +348,6 @@ class game_tester : public TESTER {
                     ("next_random", next_random)
             ), success());
     }
-#endif
 
     void signidice(name game_name, uint64_t ses_id) {
         auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
