@@ -23,7 +23,6 @@
 #define CONTRACT_ACTION(act_name)
 #endif
 
-#define IS_DEBUG true
 
 namespace game_sdk {
 
@@ -121,14 +120,12 @@ class game : public eosio::contract {
     };
     using global_singleton = eosio::singleton<"global"_n, global_row>;
 
-#ifdef IS_DEBUG
     /* debug table */
     struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
         std::list<checksum256> pseudo_queue;
     };
 
     using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
-#endif
 
     /* session struct */
     // clang-format off
@@ -156,17 +153,13 @@ class game : public eosio::contract {
         // load global singleton to memory
         global = global_singleton(_self, _self.value).get_or_default();
 
-#ifdef IS_DEBUG
         global_debug = debug_singleton(_self, _self.value).get_or_default();
-#endif
     }
 
     virtual ~game() {
         // store singleton after all operations
         global_singleton(_self, _self.value).set(global, _self);
-#ifdef IS_DEBUG
         debug_singleton(_self, _self.value).set(global_debug, _self);
-#endif
     }
 
   protected:
@@ -192,9 +185,7 @@ class game : public eosio::contract {
     // =============================================================
     const global_row& get_global() const { return global; }
 
-#ifdef IS_DEBUG
     const debug_table& get_debug() const { return global_debug; }
-#endif
 
     const session_row& get_session(uint64_t ses_id) const {
         return sessions.get(ses_id, "session with this ses_id not found");
@@ -294,12 +285,10 @@ class game : public eosio::contract {
         on_finish(current_session);
     }
 
-#ifdef IS_DEBUG
     CONTRACT_ACTION(pushnrandom)
     void push_next_random(std::array<uint64_t, 4> && next_random) {
         global_debug.pseudo_queue.emplace_back(checksum256(next_random));
     }
-#endif
 
     // new_max_win - total payout including deposit
     void update_max_win(asset new_max_win) {
@@ -451,14 +440,12 @@ class game : public eosio::contract {
             obj.last_update = eosio::current_time_point();
         });
 
-#ifdef IS_DEBUG
     if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
         const checksum256 new_digest = pseudo_queue.front();
         pseudo_queue.pop_front();
         on_random(ses_id, new_digest);
         return;
     }
-#endif
         on_random(ses_id, new_digest);
     }
 
@@ -520,9 +507,7 @@ class game : public eosio::contract {
     global_row global;
     uint64_t current_session; // id of session for which was called action
 
-#ifdef IS_DEBUG
     debug_table global_debug;
-#endif
 
   private:
     template <typename Event> void emit_event(const session_row& ses, const Event& event) {
