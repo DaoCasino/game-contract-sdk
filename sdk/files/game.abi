@@ -85,7 +85,7 @@
             ]
         },
         {
-            "name": "pair_uint16_uint32",
+            "name": "pair_uint16_uint64",
             "base": "",
             "fields": [
                 {
@@ -94,7 +94,7 @@
                 },
                 {
                     "name": "second",
-                    "type": "uint32"
+                    "type": "uint64"
                 }
             ]
         },
@@ -176,7 +176,7 @@
     "types": [
         {
             "new_type_name": "game_params_type",
-            "type": "pair_uint16_uint32[]"
+            "type": "pair_uint16_uint64[]"
         }
     ],
     "actions": [
