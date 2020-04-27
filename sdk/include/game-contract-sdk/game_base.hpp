@@ -373,7 +373,7 @@ class game : public eosio::contract {
     void push_to_prng(uint64_t next_random) { global_debug.pseudo_prng.push_back(next_random); }
 
     CONTRACT_ACTION(pushnrandom)
-    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.emplace_back(checksum256(next_random)); }
+    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.push_back(next_random); }
 #endif
 
     /* contract actions */
