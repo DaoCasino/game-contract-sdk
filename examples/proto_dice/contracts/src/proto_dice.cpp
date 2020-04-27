@@ -59,6 +59,8 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
     const auto& session = get_session(ses_id);
     const auto rand_number = service::cut_to<uint32_t>(rand) % 100;
 
+    send_game_message(std::vector<game_sdk::param_t> { rand_number });
+
     eosio::print("rand num: ", rand_number, "\n");
 
     if (roll.number >= rand_number) { // Loose

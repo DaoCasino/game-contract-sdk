@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <variant>
 #include <vector>
 
@@ -32,8 +33,7 @@ using eosio::asset;
 using eosio::checksum256;
 using eosio::name;
 using eosio::require_auth;
-using eosio::symbol;
-using eosio::time_point;
+using eosio::symbol; using eosio::time_point;
 using param_t = uint64_t;
 
 class game : public eosio::contract {
@@ -120,12 +120,15 @@ class game : public eosio::contract {
     };
     using global_singleton = eosio::singleton<"global"_n, global_row>;
 
+#ifdef IS_DEBUG
     /* debug table */
     struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
         std::vector<checksum256> pseudo_queue;
+        std::vector<uint64_t> pseudo_prng;
     };
 
     using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
+#endif
 
     /* session struct */
     // clang-format off
@@ -153,13 +156,17 @@ class game : public eosio::contract {
         // load global singleton to memory
         global = global_singleton(_self, _self.value).get_or_default();
 
+#ifdef IS_DEBUG
         global_debug = debug_singleton(_self, _self.value).get_or_default();
+#endif
     }
 
     virtual ~game() {
         // store singleton after all operations
         global_singleton(_self, _self.value).set(global, _self);
+#ifdef IS_DEBUG
         debug_singleton(_self, _self.value).set(global_debug, _self);
+#endif
     }
 
   protected:
@@ -185,7 +192,9 @@ class game : public eosio::contract {
     // =============================================================
     const global_row& get_global() const { return global; }
 
+#ifdef IS_DEBUG
     const debug_table& get_debug() const { return global_debug; }
+#endif
 
     const session_row& get_session(uint64_t ses_id) const {
         return sessions.get(ses_id, "session with this ses_id not found");
@@ -199,6 +208,23 @@ class game : public eosio::contract {
 
         return itr == session.params.end() ? std::nullopt : std::optional<param_t>{itr->second};
     }
+
+    // =============================================================
+    // PRNG
+    // =============================================================
+    service::PRNG::Ptr get_prng(checksum256 && seed) const {
+
+#ifdef IS_DEBUG
+        if (!get_debug().pseudo_prng.empty()) {
+            const auto pseudo_prng = get_debug().pseudo_prng;
+            global_debug.pseudo_prng.clear();
+            return std::make_shared<service::PseudoPRNG>(pseudo_prng);
+        }
+#endif
+
+        return std::make_shared<service::Xoshiro>(seed);
+    }
+
 
   protected:
     /* game session state changers */
@@ -242,11 +268,7 @@ class game : public eosio::contract {
         finish_game(player_payout, std::nullopt);
     }
 
-<<<<<<< HEAD
-    void finish_game(asset player_payout, std::optional<bytes>&& msg) {
-=======
     void finish_game(asset player_payout, std::optional<std::vector<param_t>> && msg) {
->>>>>>> develop
         const auto& session = get_session(current_session);
 
         check_only_states(session,
@@ -284,11 +306,7 @@ class game : public eosio::contract {
         notify_close_session(session);
 
         if (msg.has_value())
-<<<<<<< HEAD
-            emit_event(session, events::game_finished{player_win, msg.value()});
-=======
             emit_event(session, events::game_finished { player_win, eosio::pack(msg.value()) });
->>>>>>> develop
         else
             emit_event(session, events::game_finished{player_win});
 
@@ -353,10 +371,17 @@ class game : public eosio::contract {
         }
     }
 
+#ifdef IS_DEBUG
+    CONTRACT_ACTION(pushprng)
+    void push_to_prng(uint64_t next_random) {
+        global_debug.pseudo_prng.push_back(next_random);
+    }
+
     CONTRACT_ACTION(pushnrandom)
     void push_next_random(checksum256 next_random) {
         global_debug.pseudo_queue.emplace_back(checksum256(next_random));
     }
+#endif
 
     /* contract actions */
     CONTRACT_ACTION(newgame)
@@ -377,13 +402,9 @@ class game : public eosio::contract {
         const auto game_params = fetch_game_params(casino_id);
         const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
 
-<<<<<<< HEAD
-        sessions.modify(session, get_self(), [&](auto& obj) {
-=======
         // always be careful with ref after modify
         // ref will still life but refer to object without new updates
         sessions.modify(session, get_self(), [&](auto& obj){
->>>>>>> develop
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
             obj.digest = init_digest;
@@ -395,11 +416,7 @@ class game : public eosio::contract {
 
         notify_new_session(updated_session);
 
-<<<<<<< HEAD
-        emit_event(session, events::game_started{});
-=======
         emit_event(updated_session, events::game_started { });
->>>>>>> develop
 
         on_new_game(ses_id);
     }
@@ -465,13 +482,16 @@ class game : public eosio::contract {
             obj.last_update = eosio::current_time_point();
         });
 
+#ifdef IS_DEBUG
         if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
             const checksum256 new_digest = pseudo_queue.back();
             pseudo_queue.pop_back();
             on_random(ses_id, new_digest);
-        } else  {
-            on_random(ses_id, new_digest);
+            return;
         }
+#endif
+
+        on_random(ses_id, new_digest);
     }
 
     CONTRACT_ACTION(close)
@@ -540,7 +560,9 @@ class game : public eosio::contract {
     global_row global;
     uint64_t current_session; // id of session for which was called action
 
-    debug_table global_debug;
+#ifdef IS_DEBUG
+    mutable debug_table global_debug;
+#endif
 
   private:
     template <typename Event> void emit_event(const session_row& ses, const Event& event) {
@@ -575,10 +597,6 @@ class game : public eosio::contract {
         return eosio::current_time_point().sec_since_epoch() - ses.last_update.sec_since_epoch() > global.session_ttl;
     }
 
-<<<<<<< HEAD
-    checksum256 calc_seed(const session_row& ses) const {
-        std::array<uint64_t, 4> values{get_self_id(), ses.casino_id, ses.ses_seq, ses.player.value};
-=======
     checksum256 calc_seed(uint64_t casino_id, uint64_t ses_seq, name player) const {
         std::array<uint64_t, 4> values {
             get_self_id(),
@@ -586,7 +604,6 @@ class game : public eosio::contract {
             ses_seq,
             player.value
         };
->>>>>>> develop
         return checksum256(values);
     }
 
@@ -601,9 +618,6 @@ class game : public eosio::contract {
     }
 
     void notify_new_session(const session_row& ses) const {
-<<<<<<< HEAD
-        eosio::action({get_self(), "active"_n}, get_casino(ses), "newsession"_n, std::make_tuple(get_self())).send();
-=======
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
@@ -612,15 +626,10 @@ class game : public eosio::contract {
                 get_self()
             )
         ).send();
->>>>>>> develop
     }
 
     void notify_update_session(const session_row& ses, asset max_win_delta) const {
         eosio::action(
-<<<<<<< HEAD
-            {get_self(), "active"_n}, get_casino(ses), "sesupdate"_n, std::make_tuple(get_self(), max_win_delta))
-            .send();
-=======
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
             "sesupdate"_n,
@@ -629,15 +638,10 @@ class game : public eosio::contract {
                 max_win_delta
             )
         ).send();
->>>>>>> develop
     }
 
     void notify_close_session(const session_row& ses) const {
         eosio::action(
-<<<<<<< HEAD
-            {get_self(), "active"_n}, get_casino(ses), "sesclose"_n, std::make_tuple(get_self(), ses.last_max_win))
-            .send();
-=======
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
             "sesclose"_n,
@@ -646,7 +650,6 @@ class game : public eosio::contract {
                 ses.last_max_win
             )
         ).send();
->>>>>>> develop
     }
 
     void set_current_session(uint64_t ses_id) { current_session = ses_id; }

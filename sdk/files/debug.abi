@@ -11,12 +11,26 @@
             ]
         },
         {
+            "name": "push_to_prng",
+            "base": "",
+            "fields": [
+                {
+                    "name": "next_random",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "debug_table",
             "base": "",
             "fields": [
                 {
                     "name": "pseudo_queue",
                     "type": "checksum256[]"
+                },
+                {
+                    "name": "pseudo_prng",
+                    "type": "uint64[]"
                 }
             ]
         }
@@ -25,6 +39,11 @@
         {
             "name": "pushnrandom",
             "type": "push_next_random",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "pushprng",
+            "type": "push_to_prng",
             "ricardian_contract": ""
         }
     ],

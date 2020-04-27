@@ -177,6 +177,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, proto_dice_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+#ifdef IS_DEBUG
 BOOST_FIXTURE_TEST_CASE(full_session_pseudo_test, proto_dice_tester) try {
     auto player_name = N(player);
 
@@ -216,6 +217,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_pseudo_test, proto_dice_tester) try {
     BOOST_REQUIRE_EQUAL(player_balance_before + payout, player_balance_after);
 }
 FC_LOG_AND_RETHROW()
+#endif
 
 BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     auto player_name = N(player);
