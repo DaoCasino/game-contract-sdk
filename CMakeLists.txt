@@ -8,6 +8,6 @@ execute_process(COMMAND git describe --tags --always --dirty
 )
 string(STRIP ${GIT_TAG_RAW} VERSION_FULL)
 
-
 message(STATUS "Building example contracts ${VERSION_FULL}")
+option(IS_DEBUG "Is Debug" OFF)
 add_subdirectory(examples)

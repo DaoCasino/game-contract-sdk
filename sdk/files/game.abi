@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -26,7 +26,7 @@
                 },
                 {
                     "name": "params",
-                    "type": "uint32[]"
+                    "type": "uint64[]"
                 }
             ]
         },

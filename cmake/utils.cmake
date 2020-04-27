@@ -1,9 +1,13 @@
 macro(add_game_contract TARGET)
     add_executable(${TARGET} ${ARGN})
-    target_compile_options(${TARGET} PUBLIC -contract=game -DNOABI)
+    target_compile_options(${TARGET} PUBLIC -contract=${TARGET} -DNOABI)
     target_link_libraries(${TARGET} game-contract-sdk)
     add_custom_command(TARGET ${TARGET} POST_BUILD
-        COMMAND cp ${GAME_SDK_PATH}/sdk/files/game.abi ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
+        COMMAND python3
+            ${GAME_SDK_PATH}/sdk/scripts/abi-merger.py
+            ${GAME_SDK_PATH}/sdk/files/game.abi
+            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
+            ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
     )
 endmacro()
 
@@ -42,6 +46,13 @@ endmacro()
 macro(add_game_test TARGET)
     add_eosio_test(${TARGET} ${ARGN})
     target_compile_options(${TARGET} PUBLIC -Wno-deprecated-declarations)
+
+    if(IS_DEBUG)
+        target_compile_options(${TARGET} PUBLIC -DIS_DEBUG=on)
+    endif()
+
+    unset(IS_DEBUG CACHE)
+
     target_link_libraries(${TARGET} game-tester)
 endmacro()
 

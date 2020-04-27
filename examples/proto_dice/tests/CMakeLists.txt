@@ -6,5 +6,6 @@ add_subdirectory(${GAME_SDK_PATH}/tester ${CMAKE_BINARY_DIR}/tester)
 
 configure_file(contracts.hpp.in ${CMAKE_BINARY_DIR}/contracts.hpp)
 
+option(IS_DEBUG "Is Debug" OFF)
 add_game_test(proto_dice_unit_test proto_dice_tests.cpp )
 target_include_directories(proto_dice_unit_test PUBLIC ${CMAKE_BINARY_DIR})
