@@ -15,7 +15,8 @@ class stub_tester : public game_tester {
 
         game_params_type game_params = {};
         deploy_game<stub_game>(game_name, game_params);
-    } };
+    }
+};
 
 const name stub_tester::game_name = N(stubgame);
 
@@ -80,10 +81,7 @@ FC_LOG_AND_RETHROW()
 BOOST_FIXTURE_TEST_CASE(full_session_pseudo_random_test, stub_tester) try {
     auto player_name = N(player);
 
-    push_next_random(
-        game_name,
-        sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-    );
+    push_next_random(game_name, sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
 
     create_player(player_name);
     link_game(player_name, game_name);
@@ -341,36 +339,18 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, stub_tester) try {
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
     // clang-format on
     BOOST_REQUIRE_EQUAL(
-        push_action(
-            game_name,
-            N(sgdicefirst),
-            {platform_name, N(signidice)},
-            mvo()
-                ("req_id", ses_id)
-                ("sign", sign_1)
-        ), wasm_assert_msg("state should be 'req_signidice_part_1'"));
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        wasm_assert_msg("state should be 'req_signidice_part_1'"));
 
     game_action(game_name, ses_id, 0, {30});
 
     BOOST_REQUIRE_EQUAL(
-        push_action(
-            game_name,
-            N(sgdicefirst),
-            {platform_name, N(signidice)},
-            mvo()
-                ("req_id", ses_id)
-                ("sign", sign_1)
-        ), success());
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        success());
 
     BOOST_REQUIRE_EQUAL(
-        push_action(
-            game_name,
-            N(sgdicefirst),
-            {platform_name, N(signidice)},
-            mvo()
-                ("req_id", ses_id)
-                ("sign", sign_1)
-        ), wasm_assert_msg("state should be 'req_signidice_part_1'"));
+        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
+        wasm_assert_msg("state should be 'req_signidice_part_1'"));
     // clang-format on
 }
 FC_LOG_AND_RETHROW()

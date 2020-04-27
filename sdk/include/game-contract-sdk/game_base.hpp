@@ -13,8 +13,8 @@
 #include <eosio/eosio.hpp>
 #include <eosio/serialize.hpp>
 
-#include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/dispatcher.hpp>
+#include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/service.hpp>
 
 // abi generator hack
@@ -24,7 +24,6 @@
 #define CONTRACT_ACTION(act_name)
 #endif
 
-
 namespace game_sdk {
 
 using bytes = std::vector<char>;
@@ -33,7 +32,8 @@ using eosio::asset;
 using eosio::checksum256;
 using eosio::name;
 using eosio::require_auth;
-using eosio::symbol; using eosio::time_point;
+using eosio::symbol;
+using eosio::time_point;
 using param_t = uint64_t;
 
 class game : public eosio::contract {
@@ -212,7 +212,7 @@ class game : public eosio::contract {
     // =============================================================
     // PRNG
     // =============================================================
-    service::PRNG::Ptr get_prng(checksum256 && seed) const {
+    service::PRNG::Ptr get_prng(checksum256&& seed) const {
 
 #ifdef IS_DEBUG
         if (!get_debug().pseudo_prng.empty()) {
@@ -224,7 +224,6 @@ class game : public eosio::contract {
 
         return std::make_shared<service::Xoshiro>(seed);
     }
-
 
   protected:
     /* game session state changers */
@@ -259,16 +258,14 @@ class game : public eosio::contract {
 
     void send_game_message(bytes&& msg) { emit_event(get_session(current_session), events::game_message{msg}); }
 
-    void send_game_message(std::vector<param_t> && msg) {
-        send_game_message(eosio::pack(msg));
-    }
+    void send_game_message(std::vector<param_t>&& msg) { send_game_message(eosio::pack(msg)); }
 
     void finish_game(asset player_payout) {
         const auto& session = get_session(current_session);
         finish_game(player_payout, std::nullopt);
     }
 
-    void finish_game(asset player_payout, std::optional<std::vector<param_t>> && msg) {
+    void finish_game(asset player_payout, std::optional<std::vector<param_t>>&& msg) {
         const auto& session = get_session(current_session);
 
         check_only_states(session,
@@ -306,7 +303,7 @@ class game : public eosio::contract {
         notify_close_session(session);
 
         if (msg.has_value())
-            emit_event(session, events::game_finished { player_win, eosio::pack(msg.value()) });
+            emit_event(session, events::game_finished{player_win, eosio::pack(msg.value())});
         else
             emit_event(session, events::game_finished{player_win});
 
@@ -373,14 +370,10 @@ class game : public eosio::contract {
 
 #ifdef IS_DEBUG
     CONTRACT_ACTION(pushprng)
-    void push_to_prng(uint64_t next_random) {
-        global_debug.pseudo_prng.push_back(next_random);
-    }
+    void push_to_prng(uint64_t next_random) { global_debug.pseudo_prng.push_back(next_random); }
 
     CONTRACT_ACTION(pushnrandom)
-    void push_next_random(checksum256 next_random) {
-        global_debug.pseudo_queue.emplace_back(checksum256(next_random));
-    }
+    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.emplace_back(checksum256(next_random)); }
 #endif
 
     /* contract actions */
@@ -404,7 +397,7 @@ class game : public eosio::contract {
 
         // always be careful with ref after modify
         // ref will still life but refer to object without new updates
-        sessions.modify(session, get_self(), [&](auto& obj){
+        sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
             obj.digest = init_digest;
@@ -416,7 +409,7 @@ class game : public eosio::contract {
 
         notify_new_session(updated_session);
 
-        emit_event(updated_session, events::game_started { });
+        emit_event(updated_session, events::game_started{});
 
         on_new_game(ses_id);
     }
@@ -598,12 +591,7 @@ class game : public eosio::contract {
     }
 
     checksum256 calc_seed(uint64_t casino_id, uint64_t ses_seq, name player) const {
-        std::array<uint64_t, 4> values {
-            get_self_id(),
-            casino_id,
-            ses_seq,
-            player.value
-        };
+        std::array<uint64_t, 4> values{get_self_id(), casino_id, ses_seq, player.value};
         return checksum256(values);
     }
 
@@ -618,38 +606,24 @@ class game : public eosio::contract {
     }
 
     void notify_new_session(const session_row& ses) const {
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(ses.casino_id),
-            "newsession"_n,
-            std::make_tuple(
-                get_self()
-            )
-        ).send();
+        eosio::action({get_self(), "active"_n}, get_casino(ses.casino_id), "newsession"_n, std::make_tuple(get_self()))
+            .send();
     }
 
     void notify_update_session(const session_row& ses, asset max_win_delta) const {
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(ses.casino_id),
-            "sesupdate"_n,
-            std::make_tuple(
-                get_self(),
-                max_win_delta
-            )
-        ).send();
+        eosio::action({get_self(), "active"_n},
+                      get_casino(ses.casino_id),
+                      "sesupdate"_n,
+                      std::make_tuple(get_self(), max_win_delta))
+            .send();
     }
 
     void notify_close_session(const session_row& ses) const {
-        eosio::action(
-            {get_self(),"active"_n},
-            get_casino(ses.casino_id),
-            "sesclose"_n,
-            std::make_tuple(
-                get_self(),
-                ses.last_max_win
-            )
-        ).send();
+        eosio::action({get_self(), "active"_n},
+                      get_casino(ses.casino_id),
+                      "sesclose"_n,
+                      std::make_tuple(get_self(), ses.last_max_win))
+            .send();
     }
 
     void set_current_session(uint64_t ses_id) { current_session = ses_id; }

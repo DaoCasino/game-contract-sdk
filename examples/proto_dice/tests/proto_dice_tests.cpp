@@ -193,18 +193,15 @@ BOOST_FIXTURE_TEST_CASE(full_session_pseudo_test, proto_dice_tester) try {
 
     BOOST_REQUIRE_EQUAL(get_balance(game_name), STRSYM("5.0000"));
 
-    push_next_random(
-        game_name,
-        sha256("0000000000000000000000000000000000000000000000000000000000000063") // 99
+    push_next_random(game_name,
+                     sha256("0000000000000000000000000000000000000000000000000000000000000063") // 99
     );
 
     game_action(game_name, ses_id, 0, {98});
 
     auto session = get_game_session(game_name, ses_id);
-    BOOST_REQUIRE_EQUAL(
-        session["state"].as<uint32_t>(),
-        3
-    ); // req_signidice_part_1 state
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        3); // req_signidice_part_1 state
 
     signidice(game_name, ses_id);
 

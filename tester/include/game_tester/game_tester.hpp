@@ -324,41 +324,26 @@ class game_tester : public TESTER {
         }
 
         // format-clang off
-        BOOST_REQUIRE_EQUAL(
-            push_action(
-                game_name,
-                N(gameaction),
-                {player, N(game)},
-                {platform_name, N(active)},
-                mvo()
-                    ("req_id", ses_id)
-                    ("type", action_type)
-                    ("params", params)
-            ), success());
+        BOOST_REQUIRE_EQUAL(push_action(game_name,
+                                        N(gameaction),
+                                        {player, N(game)},
+                                        {platform_name, N(active)},
+                                        mvo()("req_id", ses_id)("type", action_type)("params", params)),
+                            success());
         // format-clang on
     }
 
 #ifdef IS_DEBUG
-    void push_next_random(name game_name, sha256 && next_random) {
+    void push_next_random(name game_name, sha256&& next_random) {
         BOOST_REQUIRE_EQUAL(
-            push_action(
-                game_name,
-                N(pushnrandom),
-                {platform_name, N(active)},
-                mvo()
-                    ("next_random", next_random)
-            ), success());
+            push_action(game_name, N(pushnrandom), {platform_name, N(active)}, mvo()("next_random", next_random)),
+            success());
     }
 
-    void push_to_prng(name game_name, uint64_t && next_random) {
+    void push_to_prng(name game_name, uint64_t&& next_random) {
         BOOST_REQUIRE_EQUAL(
-            push_action(
-                game_name,
-                N(pushprng),
-                {platform_name, N(active)},
-                mvo()
-                    ("next_random", next_random)
-            ), success());
+            push_action(game_name, N(pushprng), {platform_name, N(active)}, mvo()("next_random", next_random)),
+            success());
     }
 #endif
 

@@ -9,13 +9,11 @@
 namespace service {
 using eosio::checksum256;
 
-template <typename T, class = std::enable_if_t<std::is_unsigned<T>::value>>
-T cut_to(const checksum256& input) {
+template <typename T, class = std::enable_if_t<std::is_unsigned<T>::value>> T cut_to(const checksum256& input) {
     return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
 }
 
-template <>
-uint128_t cut_to(const checksum256& input) {
+template <> uint128_t cut_to(const checksum256& input) {
     const auto& parts = input.get_array();
     const uint128_t left = parts[0] % std::numeric_limits<uint64_t>::max();
     const uint128_t right = parts[1] % std::numeric_limits<uint64_t>::max();
@@ -43,7 +41,7 @@ struct PRNG {
 
 // xoshiro256++ prng algo
 // http://prng.di.unimi.it/
-class Xoshiro: public PRNG {
+class Xoshiro : public PRNG {
   public:
     explicit Xoshiro(const checksum256& seed) : _s(split(seed)) {}
     explicit Xoshiro(checksum256&& seed) : _s(split(std::move(seed))) {}
@@ -76,9 +74,9 @@ class Xoshiro: public PRNG {
     std::array<uint64_t, 4> _s;
 };
 
-class PseudoPRNG: public PRNG {
-public:
-    PseudoPRNG(const std::vector<uint64_t>& values) :_values(values), _current(_values.begin()) {}
+class PseudoPRNG : public PRNG {
+  public:
+    PseudoPRNG(const std::vector<uint64_t>& values) : _values(values), _current(_values.begin()) {}
 
     uint64_t next() override {
         uint64_t result = *_current++;
@@ -87,22 +85,18 @@ public:
         return result;
     }
 
-private:
+  private:
     std::vector<uint64_t> _values;
     std::vector<uint64_t>::iterator _current;
 };
 
-template <class RandomIt>
-void shuffle(RandomIt first, RandomIt last, PRNG::Ptr && prng) {
-    shuffle(first, last, prng);
-}
+template <class RandomIt> void shuffle(RandomIt first, RandomIt last, PRNG::Ptr&& prng) { shuffle(first, last, prng); }
 
-template <class RandomIt>
-void shuffle(RandomIt first, RandomIt last, PRNG::Ptr & prng) {
+template <class RandomIt> void shuffle(RandomIt first, RandomIt last, PRNG::Ptr& prng) {
     typename std::iterator_traits<RandomIt>::difference_type i, n;
     n = last - first;
     for (i = n - 1; i > 0; --i) {
-        std::swap(first[i], first[prng->next() % (i+1)]);
+        std::swap(first[i], first[prng->next() % (i + 1)]);
     }
 }
 
