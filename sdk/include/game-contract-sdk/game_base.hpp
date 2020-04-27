@@ -431,7 +431,7 @@ class game : public eosio::contract {
             obj.state = static_cast<uint8_t>(state::req_signidice_part_2);
         });
 
-        emit_event(session, events::signidice_part_1_request{new_digest});
+        emit_event(session, events::signidice_part_2_request{new_digest});
     }
 
     CONTRACT_ACTION(sgdicesecond)
