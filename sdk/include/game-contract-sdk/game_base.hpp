@@ -120,16 +120,6 @@ class game : public eosio::contract {
     };
     using global_singleton = eosio::singleton<"global"_n, global_row>;
 
-#ifdef IS_DEBUG
-    /* debug table */
-    struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
-        std::vector<checksum256> pseudo_queue;
-        std::vector<uint64_t> pseudo_prng;
-    };
-
-    using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
-#endif
-
     /* session struct */
     // clang-format off
     struct [[eosio::table("session"), eosio::contract("game")]] session_row {
@@ -191,10 +181,6 @@ class game : public eosio::contract {
     // Getters
     // =============================================================
     const global_row& get_global() const { return global; }
-
-#ifdef IS_DEBUG
-    const debug_table& get_debug() const { return global_debug; }
-#endif
 
     const session_row& get_session(uint64_t ses_id) const {
         return sessions.get(ses_id, "session with this ses_id not found");
@@ -367,14 +353,6 @@ class game : public eosio::contract {
             });
         }
     }
-
-#ifdef IS_DEBUG
-    CONTRACT_ACTION(pushprng)
-    void push_to_prng(uint64_t next_random) { global_debug.pseudo_prng.push_back(next_random); }
-
-    CONTRACT_ACTION(pushnrandom)
-    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.push_back(next_random); }
-#endif
 
     /* contract actions */
     CONTRACT_ACTION(newgame)
@@ -553,10 +531,6 @@ class game : public eosio::contract {
     global_row global;
     uint64_t current_session; // id of session for which was called action
 
-#ifdef IS_DEBUG
-    mutable debug_table global_debug;
-#endif
-
   private:
     template <typename Event> void emit_event(const session_row& ses, const Event& event) {
         const auto data_bytes = eosio::pack<Event>(event);
@@ -667,6 +641,28 @@ class game : public eosio::contract {
     }
 
     void check_from_platform_signidice() const { require_auth({get_platform(), platform_signidice_permission}); }
+
+#ifdef IS_DEBUG
+  public:
+    /* debug table */
+    struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
+        std::vector<checksum256> pseudo_queue;
+        std::vector<uint64_t> pseudo_prng;
+    };
+
+    using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
+
+    CONTRACT_ACTION(pushprng)
+    void push_to_prng(uint64_t next_random) { global_debug.pseudo_prng.push_back(next_random); }
+
+    CONTRACT_ACTION(pushnrandom)
+    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.push_back(next_random); }
+
+  protected:
+    const debug_table& get_debug() const { return global_debug; }
+  private:
+    mutable debug_table global_debug;
+#endif
 };
 
 const asset game::zero_asset = asset(0, game::core_symbol);
