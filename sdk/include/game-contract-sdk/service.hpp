@@ -79,7 +79,7 @@ class PseudoPRNG : public PRNG {
     PseudoPRNG(const std::vector<uint64_t>& values) : _values(values), _current(_values.begin()) {}
 
     uint64_t next() override {
-        uint64_t result = *_current++;
+        const uint64_t result = *_current++;
         if (_current == _values.end())
             _current = _values.begin();
         return result;
@@ -90,9 +90,11 @@ class PseudoPRNG : public PRNG {
     std::vector<uint64_t>::iterator _current;
 };
 
-template <class RandomIt> void shuffle(RandomIt first, RandomIt last, PRNG::Ptr&& prng) { shuffle(first, last, prng); }
+template <class RandomIt>
+void shuffle(RandomIt first, RandomIt last, PRNG::Ptr&& prng) { shuffle(first, last, prng); }
 
-template <class RandomIt> void shuffle(RandomIt first, RandomIt last, PRNG::Ptr& prng) {
+template <class RandomIt>
+void shuffle(RandomIt first, RandomIt last, PRNG::Ptr& prng) {
     typename std::iterator_traits<RandomIt>::difference_type i, n;
     n = last - first;
     for (i = n - 1; i > 0; --i) {
