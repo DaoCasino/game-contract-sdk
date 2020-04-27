@@ -1,6 +1,5 @@
 #pragma once
 
-#include <exception>
 #include <variant>
 #include <vector>
 
@@ -373,6 +372,9 @@ class game : public eosio::contract {
         const auto game_params = fetch_game_params(casino_id);
         const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
 
+<<<<<<<<< Temporary merge branch 1
+        sessions.modify(session, get_self(), [&](auto& obj) {
+=========
         // always be careful with ref after modify
         // ref will still life but refer to object without new updates
         sessions.modify(session, get_self(), [&](auto& obj) {
@@ -565,7 +567,12 @@ class game : public eosio::contract {
     }
 
     checksum256 calc_seed(uint64_t casino_id, uint64_t ses_seq, name player) const {
-        std::array<uint64_t, 4> values{get_self_id(), casino_id, ses_seq, player.value};
+        std::array<uint64_t, 4> values {
+            get_self_id(),
+            casino_id,
+            ses_seq,
+            player.value
+        };
         return checksum256(values);
     }
 
@@ -580,24 +587,38 @@ class game : public eosio::contract {
     }
 
     void notify_new_session(const session_row& ses) const {
-        eosio::action({get_self(), "active"_n}, get_casino(ses.casino_id), "newsession"_n, std::make_tuple(get_self()))
-            .send();
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "newsession"_n,
+            std::make_tuple(
+                get_self()
+            )
+        ).send();
     }
 
     void notify_update_session(const session_row& ses, asset max_win_delta) const {
-        eosio::action({get_self(), "active"_n},
-                      get_casino(ses.casino_id),
-                      "sesupdate"_n,
-                      std::make_tuple(get_self(), max_win_delta))
-            .send();
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "sesupdate"_n,
+            std::make_tuple(
+                get_self(),
+                max_win_delta
+            )
+        ).send();
     }
 
     void notify_close_session(const session_row& ses) const {
-        eosio::action({get_self(), "active"_n},
-                      get_casino(ses.casino_id),
-                      "sesclose"_n,
-                      std::make_tuple(get_self(), ses.last_max_win))
-            .send();
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "sesclose"_n,
+            std::make_tuple(
+                get_self(),
+                ses.last_max_win
+            )
+        ).send();
     }
 
     void set_current_session(uint64_t ses_id) { current_session = ses_id; }
