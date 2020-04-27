@@ -372,9 +372,6 @@ class game : public eosio::contract {
         const auto game_params = fetch_game_params(casino_id);
         const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
 
-<<<<<<<<< Temporary merge branch 1
-        sessions.modify(session, get_self(), [&](auto& obj) {
-=========
         // always be careful with ref after modify
         // ref will still life but refer to object without new updates
         sessions.modify(session, get_self(), [&](auto& obj) {
