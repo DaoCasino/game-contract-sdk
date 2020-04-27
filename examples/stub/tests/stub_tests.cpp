@@ -83,6 +83,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_pseudo_random_test, stub_tester) try {
     auto player_name = N(player);
 
     push_next_random(game_name, sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    push_to_prng(game_name, 0xffffffffffffffff);
 
     create_player(player_name);
     link_game(player_name, game_name);
