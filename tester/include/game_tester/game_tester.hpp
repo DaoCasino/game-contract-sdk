@@ -170,7 +170,6 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
-
     std::optional<std::vector<fc::variant>> get_events(const EventsId event_id)
     {
         if (auto it = _events.find(event_id); it != _events.end()) {
