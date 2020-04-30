@@ -384,11 +384,14 @@ class game_tester : public TESTER {
     }
 
   private:
-    void handle_action_data(
-            bytes&& action_data,
-            const events_id event_type,
-            fc::path event_abi
-    ) {
+
+    const abi_def& get_events_abi(const events_id event_type) {
+        if (_lazy_abi_events.find(event_type) != _lazy_abi_events.end()) {
+            return _lazy_abi_events[event_type];
+        }
+
+        fc::path event_abi = fc::canonical(events_struct::folder());
+
         switch (event_type) {
         case events_id::game_started:
             event_abi /= "game_started.abi";
@@ -415,12 +418,19 @@ class game_tester : public TESTER {
             BOOST_TEST_FAIL("Can't interpret event type");
         }
 
-        const abi_def event_abi_def = fc::json::from_file(event_abi).as<abi_def>();
-        abi_serializer abi_ser;
-        abi_ser.set_abi(event_abi_def, abi_serializer_max_time);
+        _lazy_abi_events[event_type] = fc::json::from_file(event_abi).as<abi_def>();
 
+        return _lazy_abi_events[event_type];
+    }
+
+    void handle_action_data(
+            bytes&& action_data,
+            const events_id event_type
+    ) {
         fc::variant event_struct;
         if (!action_data.empty()) {
+            abi_serializer abi_ser(get_events_abi(event_type), abi_serializer_max_time);
+
             event_struct = abi_ser.binary_to_variant(
                 "event_data",
                 action_data,
@@ -438,7 +448,6 @@ class game_tester : public TESTER {
     void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
         _events.clear();
 
-        const fc::path cpath = fc::canonical(events_struct::folder());
         const abi_def events_abi = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
 
         abi_serializer abi_ser;
@@ -459,8 +468,7 @@ class game_tester : public TESTER {
 
                 handle_action_data(
                     send_action["data"].as<bytes>(),
-                    static_cast<events_id>(send_action["event_type"].as<int>()),
-                    cpath
+                    static_cast<events_id>(send_action["event_type"].as<int>())
                 );
             }
         );
@@ -472,6 +480,7 @@ class game_tester : public TESTER {
 
   private:
     std::unordered_map<events_id, std::vector<fc::variant>> _events;
+    std::unordered_map<events_id, abi_def> _lazy_abi_events;
 };
 
 } // namespace testing
