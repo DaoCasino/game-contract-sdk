@@ -396,55 +396,6 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, proto_dice_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(test_push, proto_dice_tester) try {
-    auto player_name = N(player);
-
-    create_player(player_name);
-    link_game(player_name, game_name);
-
-    transfer(N(eosio), player_name, STRSYM("10.0000"));
-    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
-
-    auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
-
-    auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
-    auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-    // clang-format off
-    BOOST_REQUIRE_EQUAL(
-        push_action(
-            game_name,
-            N(sgdicefirst),
-            {platform_name, N(signidice)}, 
-            mvo()
-                ("req_id", ses_id)
-                ("sign", sign_1)
-        ), wasm_assert_msg("state should be 'req_signidice_part_1'"));
-
-    game_action(game_name, ses_id, 0, {30});
-
-    auto transaction = push_action(
-        game_name,
-        N(sgdicefirst),
-        {platform_name, N(signidice)}, 
-        mvo()
-            ("req_id", ses_id)
-            ("sign", sign_1)
-    );
-
-    BOOST_REQUIRE_EQUAL(
-        push_action(
-            game_name,
-            N(sgdicefirst),
-            {platform_name, N(signidice)},
-            mvo()
-                ("req_id", ses_id)
-                ("sign", sign_1)
-        ), wasm_assert_msg("state should be 'req_signidice_part_1'"));
-    // clang-format on
-}
-FC_LOG_AND_RETHROW()
-
-
 BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
     auto player_name = N(player);
 
