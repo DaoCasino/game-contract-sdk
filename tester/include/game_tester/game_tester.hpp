@@ -65,7 +65,7 @@ using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
 namespace testing {
 
-enum events_id {
+enum struct events_id {
     game_started = 0,
     action_request = 1,
     signidice_part_1_request = 2,
