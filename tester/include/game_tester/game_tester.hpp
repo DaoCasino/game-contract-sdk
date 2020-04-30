@@ -448,7 +448,7 @@ class game_tester : public TESTER {
             transaction_trace->action_traces.begin(),
             transaction_trace->action_traces.end(),
             [&](const auto& action_trace) {
-                if (action_trace.receiver != "events")
+                if (action_trace.receiver != "events" || action_trace.name != "send")
                     return;
 
                 const fc::variant send_action = abi_ser.binary_to_variant(
