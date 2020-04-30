@@ -177,6 +177,45 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, proto_dice_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+#ifdef IS_DEBUG
+BOOST_FIXTURE_TEST_CASE(full_session_pseudo_test, proto_dice_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, STRSYM("10.0000"));
+    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
+
+    const auto player_balance_before = get_balance(player_name);
+
+    auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"));
+
+    BOOST_REQUIRE_EQUAL(get_balance(game_name), STRSYM("5.0000"));
+
+    push_next_random(game_name,
+                     sha256("0000000000000000000000000000000000000000000000000000000000000063") // 99
+    );
+
+    game_action(game_name, ses_id, 0, {98});
+
+    auto session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        3); // req_signidice_part_1 state
+
+    signidice(game_name, ses_id);
+
+    const auto player_balance_after = get_balance(player_name);
+
+    session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session.is_null(), true);
+
+    const auto payout = asset(100000, symbol(CORE_SYM)); // 10 token with 98
+    BOOST_REQUIRE_EQUAL(player_balance_before + payout, player_balance_after);
+}
+FC_LOG_AND_RETHROW()
+#endif
+
 BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     auto player_name = N(player);
 

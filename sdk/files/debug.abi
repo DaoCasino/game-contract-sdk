@@ -1,0 +1,59 @@
+{
+    "structs": [
+        {
+            "name": "push_next_random",
+            "base": "",
+            "fields": [
+                {
+                    "name": "next_random",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "push_to_prng",
+            "base": "",
+            "fields": [
+                {
+                    "name": "next_random",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "debug_table",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pseudo_queue",
+                    "type": "checksum256[]"
+                },
+                {
+                    "name": "pseudo_prng",
+                    "type": "uint64[]"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "pushnrandom",
+            "type": "push_next_random",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "pushprng",
+            "type": "push_to_prng",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "debug",
+            "type": "debug_table",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ]
+}

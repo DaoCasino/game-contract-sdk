@@ -323,37 +323,75 @@ class game_tester : public TESTER {
             transfer(player, game_name, deposit, std::to_string(ses_id));
         }
 
+        // format-clang off
         BOOST_REQUIRE_EQUAL(push_action(game_name,
                                         N(gameaction),
                                         {player, N(game)},
                                         {platform_name, N(active)},
                                         mvo()("req_id", ses_id)("type", action_type)("params", params)),
                             success());
+        // format-clang on
     }
+
+#ifdef IS_DEBUG
+    void push_next_random(name game_name, sha256&& next_random) {
+        BOOST_REQUIRE_EQUAL(
+            push_action(game_name, N(pushnrandom), {platform_name, N(active)}, mvo()("next_random", next_random)),
+            success());
+    }
+
+    void push_to_prng(name game_name, uint64_t&& next_random) {
+        BOOST_REQUIRE_EQUAL(
+            push_action(game_name, N(pushprng), {platform_name, N(active)}, mvo()("next_random", next_random)),
+            success());
+    }
+#endif
 
     void signidice(name game_name, uint64_t ses_id) {
         auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
 
         auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
+        // clang-format off
         BOOST_REQUIRE_EQUAL(
             push_action(
-                game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
-            success());
+                game_name,
+                N(sgdicefirst),
+                {platform_name, N(signidice)},
+                mvo()
+                    ("req_id", ses_id)
+                    ("sign", sign_1)
+            ), success());
+        // clang-format on
 
         BOOST_REQUIRE_EQUAL(get_game_session(game_name, ses_id)["digest"].as<sha256>(), sha256::hash(sign_1));
 
         digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
 
         auto sign_2 = rsa_sign(rsa_keys.at(casino_name), digest);
+        // clang-format off
         BOOST_REQUIRE_EQUAL(
             push_action(
-                game_name, N(sgdicesecond), {casino_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_2)),
-            success());
+                game_name,
+                N(sgdicesecond),
+                {casino_name, N(signidice)},
+                mvo()
+                    ("req_id", ses_id)
+                    ("sign", sign_2)
+            ), success());
+        // clang-format on
     }
 
     void close_session(name game_name, uint64_t ses_id) {
-        BOOST_REQUIRE_EQUAL(push_action(game_name, N(close), {platform_name, N(active)}, mvo()("req_id", ses_id)),
-                            success());
+        // clang-format off
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name,
+                N(close),
+                {platform_name, N(active)},
+                mvo()
+                    ("req_id", ses_id)
+            ), success());
+        // clang-format on
     }
 
     asset get_balance(name account) const { return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account); }

@@ -144,11 +144,18 @@ class game : public eosio::contract {
         : contract(receiver, code, ds), sessions(_self, _self.value) {
         // load global singleton to memory
         global = global_singleton(_self, _self.value).get_or_default();
+
+#ifdef IS_DEBUG
+        global_debug = debug_singleton(_self, _self.value).get_or_default();
+#endif
     }
 
     virtual ~game() {
         // store singleton after all operations
         global_singleton(_self, _self.value).set(global, _self);
+#ifdef IS_DEBUG
+        debug_singleton(_self, _self.value).set(global_debug, _self);
+#endif
     }
 
   protected:
@@ -187,6 +194,22 @@ class game : public eosio::contract {
         return itr == session.params.end() ? std::nullopt : std::optional<param_t>{itr->second};
     }
 
+    // =============================================================
+    // PRNG
+    // =============================================================
+    service::PRNG::Ptr get_prng(checksum256&& seed) const {
+
+#ifdef IS_DEBUG
+        if (!get_debug().pseudo_prng.empty()) {
+            const auto pseudo_prng = get_debug().pseudo_prng;
+            global_debug.pseudo_prng.clear();
+            return std::make_shared<service::PseudoPRNG>(pseudo_prng);
+        }
+#endif
+
+        return std::make_shared<service::Xoshiro>(seed);
+    }
+
   protected:
     /* game session state changers */
     void require_action(uint8_t action_type, bool need_deposit = false) {
@@ -220,16 +243,14 @@ class game : public eosio::contract {
 
     void send_game_message(bytes&& msg) { emit_event(get_session(current_session), events::game_message{msg}); }
 
-    void send_game_message(std::vector<param_t> && msg) {
-        send_game_message(eosio::pack(msg));
-    }
+    void send_game_message(std::vector<param_t>&& msg) { send_game_message(eosio::pack(msg)); }
 
     void finish_game(asset player_payout) {
         const auto& session = get_session(current_session);
         finish_game(player_payout, std::nullopt);
     }
 
-    void finish_game(asset player_payout, std::optional<std::vector<param_t>> && msg) {
+    void finish_game(asset player_payout, std::optional<std::vector<param_t>>&& msg) {
         const auto& session = get_session(current_session);
 
         check_only_states(session,
@@ -267,7 +288,7 @@ class game : public eosio::contract {
         notify_close_session(session);
 
         if (msg.has_value())
-            emit_event(session, events::game_finished { player_win, eosio::pack(msg.value()) });
+            emit_event(session, events::game_finished{player_win, eosio::pack(msg.value())});
         else
             emit_event(session, events::game_finished{player_win});
 
@@ -353,7 +374,7 @@ class game : public eosio::contract {
 
         // always be careful with ref after modify
         // ref will still life but refer to object without new updates
-        sessions.modify(session, get_self(), [&](auto& obj){
+        sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
             obj.casino_id = casino_id;
             obj.digest = init_digest;
@@ -366,6 +387,7 @@ class game : public eosio::contract {
         notify_new_session(updated_session);
 
         emit_event(updated_session, events::game_started{});
+
         on_new_game(ses_id);
     }
 
@@ -429,6 +451,15 @@ class game : public eosio::contract {
             obj.digest = new_digest;
             obj.last_update = eosio::current_time_point();
         });
+
+#ifdef IS_DEBUG
+        if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
+            const checksum256 new_digest = pseudo_queue.back();
+            pseudo_queue.pop_back();
+            on_random(ses_id, new_digest);
+            return;
+        }
+#endif
 
         on_random(ses_id, new_digest);
     }
@@ -628,6 +659,28 @@ class game : public eosio::contract {
     }
 
     void check_from_platform_signidice() const { require_auth({get_platform(), platform_signidice_permission}); }
+
+#ifdef IS_DEBUG
+  public:
+    /* debug table */
+    struct [[eosio::table("debug"), eosio::contract("game")]] debug_table {
+        std::vector<checksum256> pseudo_queue;
+        std::vector<uint64_t> pseudo_prng;
+    };
+
+    using debug_singleton = eosio::singleton<"debug"_n, debug_table>;
+
+    CONTRACT_ACTION(pushprng)
+    void push_to_prng(uint64_t next_random) { global_debug.pseudo_prng.push_back(next_random); }
+
+    CONTRACT_ACTION(pushnrandom)
+    void push_next_random(checksum256 next_random) { global_debug.pseudo_queue.push_back(next_random); }
+
+  protected:
+    const debug_table& get_debug() const { return global_debug; }
+  private:
+    mutable debug_table global_debug;
+#endif
 };
 
 const asset game::zero_asset = asset(0, game::core_symbol);

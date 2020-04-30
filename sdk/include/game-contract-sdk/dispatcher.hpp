@@ -38,6 +38,18 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
 
 } // namespace game_sdk
 
+#ifdef IS_DEBUG
+#define EXTRA_CHECK(TYPE)                                                                                      \
+    case "pushnrandom"_n.value:                                                                                \
+        game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::push_next_random);     \
+        break;                                                                                                 \
+    case "pushprng"_n.value:                                                                                   \
+        game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::push_to_prng);         \
+        break;
+#else
+#define EXTRA_CHECK(TYPE)
+#endif
+
 #define GAME_CONTRACT(TYPE)                                                                                            \
     extern "C" {                                                                                                       \
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {                                                    \
@@ -63,6 +75,7 @@ bool execute_action(eosio::name self, eosio::name code, void (game::*func)(Args.
             case "close"_n.value:                                                                                      \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close);                \
                 break;                                                                                                 \
+            EXTRA_CHECK(TYPE)                                                                                          \
             default:                                                                                                   \
                 eosio::eosio_exit(1);                                                                                  \
             }                                                                                                          \

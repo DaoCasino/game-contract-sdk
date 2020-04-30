@@ -66,7 +66,7 @@ void proto_dice::on_random(uint64_t ses_id, checksum256 rand) {
         return;
     }
 
-    finish_game(calc_max_win(ses_id, roll.number));
+    finish_game(calc_max_win(ses_id, roll.number), std::vector<game_sdk::param_t> { rand_number });
 }
 
 void proto_dice::on_finish(uint64_t ses_id) {
