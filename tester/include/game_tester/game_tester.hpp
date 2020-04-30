@@ -382,15 +382,13 @@ class game_tester : public TESTER {
         return data.empty() ? fc::variant()
                             : abi_ser[game_name].binary_to_variant("session_row", data, abi_serializer_max_time);
     }
-  private:
 
+  private:
     void handle_action_data(
             bytes&& action_data,
             const int event_type,
-            const fc::path& events_abi_path
+            fc::path event_abi
     ) {
-
-        fc::path event_abi = events_abi_path;
         switch (event_type) {
         case events_id::game_started:
             event_abi /= "game_started.abi";
