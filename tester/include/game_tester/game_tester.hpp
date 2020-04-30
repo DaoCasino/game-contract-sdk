@@ -438,7 +438,7 @@ class game_tester : public TESTER {
     void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
         _events.clear();
 
-        const fc::path cpath = fc::canonical(contracts::events_struct::folder());
+        const fc::path cpath = fc::canonical(events_struct::folder());
         const abi_def events_abi = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
 
         abi_serializer abi_ser;
@@ -448,7 +448,7 @@ class game_tester : public TESTER {
             transaction_trace->action_traces.begin(),
             transaction_trace->action_traces.end(),
             [&](const auto& action_trace) {
-                if (action_trace.receiver != "events" || action_trace.name != "send")
+                if (action_trace.receiver != "events" || action_trace.act.name != "send")
                     return;
 
                 const fc::variant send_action = abi_ser.binary_to_variant(
