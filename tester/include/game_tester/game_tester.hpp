@@ -65,7 +65,7 @@ using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
 namespace testing {
 
-enum EventsId {
+enum events_id {
     game_started = 0,
     action_request = 1,
     signidice_part_1_request = 2,
@@ -170,7 +170,7 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
-    std::optional<std::vector<fc::variant>> get_events(const EventsId event_id)
+    std::optional<std::vector<fc::variant>> get_events(const events_id event_id)
     {
         if (auto it = _events.find(event_id); it != _events.end()) {
             return { it->second };
@@ -400,25 +400,25 @@ class game_tester : public TESTER {
 
         fc::path event_abi = events_abi_path;
         switch (event_type) {
-        case EventsId::game_started:
+        case events_id::game_started:
             event_abi /= "game_started.abi";
             break;
-        case EventsId::action_request:
+        case events_id::action_request:
             event_abi /= "action_request.abi";
             break;
-        case EventsId::signidice_part_1_request:
+        case events_id::signidice_part_1_request:
             event_abi /= "signidice_part_1_request.abi";
             break;
-        case EventsId::signidice_part_2_request:
+        case events_id::signidice_part_2_request:
             event_abi /= "signidice_part_2_request.abi";
             break;
-        case EventsId::game_finished:
+        case events_id::game_finished:
             event_abi /= "game_finished.abi";
             break;
-        case EventsId::game_failed:
+        case events_id::game_failed:
             event_abi /= "game_failed.abi";
             break;
-        case EventsId::game_message:
+        case events_id::game_message:
             event_abi /= "game_message.abi";
             break;
         default:
@@ -437,10 +437,10 @@ class game_tester : public TESTER {
             );
         }
 
-        if (auto it = _events.find(static_cast<EventsId>(event_type)); it != _events.end()) {
+        if (auto it = _events.find(static_cast<events_id>(event_type)); it != _events.end()) {
             it->second.emplace_back(std::move(event_struct));
         } else {
-            _events[static_cast<EventsId>(event_type)] = {event_struct, };
+            _events[static_cast<events_id>(event_type)] = {event_struct, };
         }
     }
 
@@ -462,7 +462,7 @@ class game_tester : public TESTER {
     std::map<account_name, RSA_ptr> rsa_keys;
 
   private:
-    std::unordered_map<EventsId, std::vector<fc::variant>> _events;
+    std::unordered_map<events_id, std::vector<fc::variant>> _events;
 };
 
 } // namespace testing
