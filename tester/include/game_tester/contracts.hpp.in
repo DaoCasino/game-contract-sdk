@@ -12,18 +12,25 @@ static const eosio::chain::name events_name = N(events);
 static const eosio::chain::name casino_name = N(casino);
 
 struct contracts {
+    struct events_struct {
+        static fc::path folder() { return "${GAME_SDK_PATH}sdk/files/events"; }
+    };
+
     struct platform {
         struct platfrm {
+            static fc::path             abi_path() { return "${PLATFORM_CONTRACTS_PATH}/platform/platform.abi"; }
             static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/platform/platform.wasm"); }
             static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/platform/platform.abi"); }
         };
 
         struct events {
+            static fc::path             abi_path() { return "${PLATFORM_CONTRACTS_PATH}/events/events.abi"; }
             static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/events/events.wasm"); }
             static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/events/events.abi"); }
         };
 
         struct casino {
+            static fc::path             abi_path() { return "${PLATFORM_CONTRACTS_PATH}/casino/casino.abi"; }
             static std::vector<uint8_t> wasm() { return read_wasm("${PLATFORM_CONTRACTS_PATH}/casino/casino.wasm"); }
             static std::vector<char>    abi() { return read_abi("${PLATFORM_CONTRACTS_PATH}/casino/casino.abi"); }
         };

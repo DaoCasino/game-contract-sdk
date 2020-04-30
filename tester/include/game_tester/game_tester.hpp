@@ -65,6 +65,16 @@ using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
 namespace testing {
 
+enum EventsId {
+    game_started = 0,
+    action_request = 1,
+    signidice_part_1_request = 2,
+    signidice_part_2_request = 3,
+    game_finished = 4,
+    game_failed = 5,
+    game_message = 6
+};
+
 class game_tester : public TESTER {
   public:
     constexpr static uint32_t game_session_ttl = 60 * 10;
@@ -160,6 +170,16 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
+
+    std::optional<std::vector<fc::variant>> get_events(const EventsId event_id)
+    {
+        if (auto it = _events.find(event_id); it != _events.end()) {
+            return { it->second };
+        } else {
+            return std::nullopt;
+        }
+    }
+
     action_result push_action(const action_name& contract,
                               const action_name& name,
                               const permission_level& auth,
@@ -182,7 +202,7 @@ class game_tester : public TESTER {
         trx.sign(get_private_key(key.actor, key.permission.to_string()), control->get_chain_id());
 
         try {
-            push_transaction(trx);
+            handle_transaction_ptr(push_transaction(trx));
         } catch (const fc::exception& ex) {
             edump((ex.to_detail_string()));
             return error(ex.top_message()); // top_message() is assumed by many
@@ -363,10 +383,89 @@ class game_tester : public TESTER {
         return data.empty() ? fc::variant()
                             : abi_ser[game_name].binary_to_variant("session_row", data, abi_serializer_max_time);
     }
+  private:
+
+    void handle_action_trace(
+            const action_trace& action,
+            const fc::path& events_abi_path,
+            const abi_def& events_abi
+    ) {
+        if (action.receiver != "events")
+            return;
+
+        abi_serializer abi_ser;
+        abi_ser.set_abi(events_abi, abi_serializer_max_time);
+
+        const auto send_action = abi_ser.binary_to_variant("send", action.act.data, abi_serializer_max_time);
+        const auto event_type = send_action["event_type"].as<int>();
+
+        fc::path event_abi = events_abi_path;
+        switch (event_type) {
+        case EventsId::game_started:
+            event_abi /= "game_started.abi";
+            break;
+        case EventsId::action_request:
+            event_abi /= "action_request.abi";
+            break;
+        case EventsId::signidice_part_1_request:
+            event_abi /= "signidice_part_1_request.abi";
+            break;
+        case EventsId::signidice_part_2_request:
+            event_abi /= "signidice_part_2_request.abi";
+            break;
+        case EventsId::game_finished:
+            event_abi /= "game_finished.abi";
+            break;
+        case EventsId::game_failed:
+            event_abi /= "game_failed.abi";
+            break;
+        case EventsId::game_message:
+            event_abi /= "game_message.abi";
+            break;
+        default:
+            BOOST_TEST_FAIL("Can't interpret event type");
+        }
+
+        const abi_def event_abi_def = fc::json::from_file(event_abi).as<abi_def>();
+        abi_ser.set_abi(event_abi_def, abi_serializer_max_time);
+
+        const auto event_data = send_action["data"].as<bytes>();
+
+        fc::variant event_struct;
+        if (!event_data.empty()) {
+            event_struct = abi_ser.binary_to_variant(
+                "event_data",
+                event_data,
+                abi_serializer_max_time
+            );
+        }
+
+        if (auto it = _events.find(static_cast<EventsId>(event_type)); it != _events.end()) {
+            it->second.emplace_back(std::move(event_struct));
+        } else {
+            _events[static_cast<EventsId>(event_type)] = {event_struct, };
+        }
+    }
+
+    void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
+        _events.clear();
+
+        const fc::path cpath = fc::canonical(contracts::events_struct::folder());
+        const abi_def events_abi = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
+
+        std::for_each(
+            transaction_trace->action_traces.begin(),
+            transaction_trace->action_traces.end(),
+            [&](const auto& tr){ handle_action_trace(tr, cpath, events_abi); }
+        );
+    }
 
   public:
     std::map<account_name, abi_serializer> abi_ser;
     std::map<account_name, RSA_ptr> rsa_keys;
+
+  private:
+    std::unordered_map<EventsId, std::vector<fc::variant>> _events;
 };
 
 } // namespace testing
