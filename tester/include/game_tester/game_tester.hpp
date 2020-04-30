@@ -428,10 +428,8 @@ class game_tester : public TESTER {
         const abi_def event_abi_def = fc::json::from_file(event_abi).as<abi_def>();
         abi_ser.set_abi(event_abi_def, abi_serializer_max_time);
 
-        const auto event_data = send_action["data"].as<bytes>();
-
         fc::variant event_struct;
-        if (!event_data.empty()) {
+        if (const auto event_data = send_action["data"].as<bytes>(); !event_data.empty()) {
             event_struct = abi_ser.binary_to_variant(
                 "event_data",
                 event_data,
