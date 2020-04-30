@@ -384,19 +384,11 @@ class game_tester : public TESTER {
     }
   private:
 
-    void handle_action_trace(
-            const action_trace& action,
-            const fc::path& events_abi_path,
-            const abi_def& events_abi
+    void handle_action_data(
+            bytes&& action_data,
+            const int event_type,
+            const fc::path& events_abi_path
     ) {
-        if (action.receiver != "events")
-            return;
-
-        abi_serializer abi_ser;
-        abi_ser.set_abi(events_abi, abi_serializer_max_time);
-
-        const auto send_action = abi_ser.binary_to_variant("send", action.act.data, abi_serializer_max_time);
-        const auto event_type = send_action["event_type"].as<int>();
 
         fc::path event_abi = events_abi_path;
         switch (event_type) {
@@ -426,13 +418,14 @@ class game_tester : public TESTER {
         }
 
         const abi_def event_abi_def = fc::json::from_file(event_abi).as<abi_def>();
+        abi_serializer abi_ser;
         abi_ser.set_abi(event_abi_def, abi_serializer_max_time);
 
         fc::variant event_struct;
-        if (const auto event_data = send_action["data"].as<bytes>(); !event_data.empty()) {
+        if (!action_data.empty()) {
             event_struct = abi_ser.binary_to_variant(
                 "event_data",
-                event_data,
+                action_data,
                 abi_serializer_max_time
             );
         }
@@ -450,10 +443,30 @@ class game_tester : public TESTER {
         const fc::path cpath = fc::canonical(contracts::events_struct::folder());
         const abi_def events_abi = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
 
+        abi_serializer abi_ser;
+        abi_ser.set_abi(events_abi, abi_serializer_max_time);
+
         std::for_each(
             transaction_trace->action_traces.begin(),
             transaction_trace->action_traces.end(),
-            [&](const auto& tr){ handle_action_trace(tr, cpath, events_abi); }
+            [&](const auto& action_trace) {
+                if (action_trace.receiver != "events")
+                    return;
+
+                const fc::variant send_action = abi_ser.binary_to_variant(
+                    "send",
+                    action_trace.act.data,
+                    abi_serializer_max_time
+                );
+
+                const int event_type = send_action["event_type"].as<int>();
+
+                handle_action_data(
+                    send_action["data"].as<bytes>(),
+                    event_type,
+                    cpath
+                );
+            }
         );
     }
 
