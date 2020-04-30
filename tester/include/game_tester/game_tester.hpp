@@ -457,11 +457,9 @@ class game_tester : public TESTER {
                     abi_serializer_max_time
                 );
 
-                const int event_type = send_action["event_type"].as<int>();
-
                 handle_action_data(
                     send_action["data"].as<bytes>(),
-                    event_type,
+                    send_action["event_type"].as<int>(),
                     cpath
                 );
             }
