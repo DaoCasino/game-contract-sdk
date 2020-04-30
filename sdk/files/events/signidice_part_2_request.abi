@@ -8,9 +8,9 @@
             "fields": [
                 {
                     "name": "digest",
-                    "type": "checksum256",
+                    "type": "checksum256"
                 }
             ]
         }
-    ],
+    ]
 }
