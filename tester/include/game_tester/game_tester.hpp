@@ -386,7 +386,7 @@ class game_tester : public TESTER {
   private:
     void handle_action_data(
             bytes&& action_data,
-            const int event_type,
+            const events_id event_type,
             fc::path event_abi
     ) {
         switch (event_type) {
@@ -428,10 +428,10 @@ class game_tester : public TESTER {
             );
         }
 
-        if (auto it = _events.find(static_cast<events_id>(event_type)); it != _events.end()) {
+        if (auto it = _events.find(event_type); it != _events.end()) {
             it->second.emplace_back(std::move(event_struct));
         } else {
-            _events[static_cast<events_id>(event_type)] = {event_struct, };
+            _events[event_type] = {event_struct, };
         }
     }
 
@@ -459,7 +459,7 @@ class game_tester : public TESTER {
 
                 handle_action_data(
                     send_action["data"].as<bytes>(),
-                    send_action["event_type"].as<int>(),
+                    static_cast<events_id>(send_action["event_type"].as<int>()),
                     cpath
                 );
             }
