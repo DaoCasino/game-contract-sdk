@@ -122,6 +122,9 @@ class game_tester : public TESTER {
         // create permissions for signidice
         set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
         set_authority(casino_name, N(signidice), {get_public_key(casino_name, "signidice")}, N(active));
+
+        const auto platform_abi_def = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
+        _platform_abi_ser = abi_serializer(platform_abi_def, abi_serializer_max_time);
     }
 
     template <typename Contract> void deploy_contract(account_name account) {
@@ -448,11 +451,6 @@ class game_tester : public TESTER {
     void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
         _events.clear();
 
-        const abi_def events_abi = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
-
-        abi_serializer abi_ser;
-        abi_ser.set_abi(events_abi, abi_serializer_max_time);
-
         std::for_each(
             transaction_trace->action_traces.begin(),
             transaction_trace->action_traces.end(),
@@ -460,7 +458,7 @@ class game_tester : public TESTER {
                 if (action_trace.receiver != "events" || action_trace.act.name != "send")
                     return;
 
-                const fc::variant send_action = abi_ser.binary_to_variant(
+                const fc::variant send_action = _platform_abi_ser.binary_to_variant(
                     "send",
                     action_trace.act.data,
                     abi_serializer_max_time
@@ -481,6 +479,7 @@ class game_tester : public TESTER {
   private:
     std::unordered_map<events_id, std::vector<fc::variant>> _events;
     std::unordered_map<events_id, abi_def> _lazy_abi_events;
+    abi_serializer _platform_abi_ser;
 };
 
 } // namespace testing
