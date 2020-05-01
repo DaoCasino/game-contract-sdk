@@ -32,7 +32,6 @@ BOOST_FIXTURE_TEST_CASE(new_session_test, stub_tester) try {
 
     auto player_bet = STRSYM("5.0000");
     auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
-
     auto session = get_game_session(game_name, ses_id);
 
     BOOST_REQUIRE_EQUAL(session["req_id"].as<uint64_t>(), ses_id);
@@ -78,6 +77,46 @@ BOOST_FIXTURE_TEST_CASE(full_session_success_test, stub_tester) try {
     BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
 }
 FC_LOG_AND_RETHROW()
+
+#ifdef IS_DEBUG
+BOOST_FIXTURE_TEST_CASE(full_session_pseudo_random_test, stub_tester) try {
+    auto player_name = N(player);
+
+    push_next_random(game_name, sha256("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+    push_to_prng(game_name, 0xffffffffffffffff);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, STRSYM("10.0000"));
+    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
+
+    auto casino_balance_before = get_balance(casino_name);
+    auto player_balance_before = get_balance(player_name);
+
+    auto player_bet = STRSYM("5.0000");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+
+    BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
+
+    game_action(game_name, ses_id, 0, {0});
+
+    auto session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        3); // req_signidice_part_1 state
+
+    signidice(game_name, ses_id);
+
+    auto casino_balance_after = get_balance(casino_name);
+    auto player_balance_after = get_balance(player_name);
+
+    session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session.is_null(), true);
+    BOOST_REQUIRE_EQUAL(player_balance_before - player_bet, player_balance_after);
+    BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
+}
+FC_LOG_AND_RETHROW()
+#endif
 
 BOOST_FIXTURE_TEST_CASE(session_exiration_test, stub_tester) try {
     auto player_name = N(player);
@@ -263,15 +302,20 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, stub_tester) try {
                 ("type", 0)
                 ("params", std::vector<uint32_t>{30})
         ), wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
-    // clang-format on
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-    BOOST_REQUIRE_EQUAL(
-        push_action(game_name, N(sgdicefirst), {platform_name, N(signidice)}, mvo()("req_id", ses_id)("sign", sign_1)),
-        success());
 
-    // clang-format off
+    BOOST_REQUIRE_EQUAL(
+        push_action(
+            game_name,
+            N(sgdicefirst),
+            {platform_name, N(signidice)},
+            mvo()
+                ("req_id", ses_id)
+                ("sign", sign_1)
+        ), success());
+
     BOOST_REQUIRE_EQUAL(
         push_action(
             game_name,
@@ -301,7 +345,8 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, stub_tester) try {
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
-    // clang-format on
+    
+    // clang-format off
     BOOST_REQUIRE_EQUAL(
         push_action(
             game_name,
@@ -351,6 +396,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, stub_tester) try {
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign = rsa_sign(rsa_keys.at(platform_name), digest);
+    
     // clang-format off
     BOOST_REQUIRE_EQUAL(
         push_action(
