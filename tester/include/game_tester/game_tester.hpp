@@ -153,10 +153,18 @@ class game_tester : public TESTER {
     }
 
     action_result transfer(const name& from, const name& to, const asset& amount, const std::string& memo = "") {
-        return push_action(N(eosio.token),
-                           N(transfer),
-                           from,
-                           mutable_variant_object()("from", from)("to", to)("quantity", amount)("memo", memo));
+        // clang-format off
+        return push_action(
+            N(eosio.token),
+            N(transfer),
+            from,
+            mutable_variant_object()
+               ("from", from)
+               ("to", to)
+               ("quantity", amount)
+               ("memo", memo)
+        );
+        // clang-format on
     }
 
     action_result push_action(const action_name& contract,
@@ -173,10 +181,9 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
-    std::optional<std::vector<fc::variant>> get_events(const events_id event_id)
-    {
+    std::optional<std::vector<fc::variant>> get_events(const events_id event_id) {
         if (auto it = _events.find(event_id); it != _events.end()) {
-            return { it->second };
+            return {it->second};
         } else {
             return std::nullopt;
         }
@@ -425,7 +432,6 @@ class game_tester : public TESTER {
     }
 
   private:
-
     const abi_def& get_events_abi(const events_id event_type) {
         if (_lazy_abi_events.find(event_type) != _lazy_abi_events.end()) {
             return _lazy_abi_events[event_type];
@@ -464,50 +470,38 @@ class game_tester : public TESTER {
         return _lazy_abi_events[event_type];
     }
 
-    void handle_action_data(
-            bytes&& action_data,
-            const events_id event_type
-    ) {
+    void handle_action_data(bytes&& action_data, const events_id event_type) {
         fc::variant event_struct;
         if (!action_data.empty()) {
             abi_serializer abi_ser(get_events_abi(event_type), abi_serializer_max_time);
 
-            event_struct = abi_ser.binary_to_variant(
-                "event_data",
-                action_data,
-                abi_serializer_max_time
-            );
+            event_struct = abi_ser.binary_to_variant("event_data", action_data, abi_serializer_max_time);
         }
 
         if (auto it = _events.find(event_type); it != _events.end()) {
             it->second.emplace_back(std::move(event_struct));
         } else {
-            _events[event_type] = {event_struct, };
+            _events[event_type] = {
+                event_struct,
+            };
         }
     }
 
     void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
         _events.clear();
 
-        std::for_each(
-            transaction_trace->action_traces.begin(),
-            transaction_trace->action_traces.end(),
-            [&](const auto& action_trace) {
-                if (action_trace.receiver != "events" || action_trace.act.name != "send")
-                    return;
+        std::for_each(transaction_trace->action_traces.begin(),
+                      transaction_trace->action_traces.end(),
+                      [&](const auto& action_trace) {
+                          if (action_trace.receiver != "events" || action_trace.act.name != "send")
+                              return;
 
-                const fc::variant send_action = _platform_abi_ser.binary_to_variant(
-                    "send",
-                    action_trace.act.data,
-                    abi_serializer_max_time
-                );
+                          const fc::variant send_action = _platform_abi_ser.binary_to_variant(
+                              "send", action_trace.act.data, abi_serializer_max_time);
 
-                handle_action_data(
-                    send_action["data"].as<bytes>(),
-                    static_cast<events_id>(send_action["event_type"].as<int>())
-                );
-            }
-        );
+                          handle_action_data(send_action["data"].as<bytes>(),
+                                             static_cast<events_id>(send_action["event_type"].as<int>()));
+                      });
     }
 
   public:
