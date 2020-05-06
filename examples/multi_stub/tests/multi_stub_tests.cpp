@@ -18,7 +18,7 @@ class stub_tester : public game_tester {
     }
 };
 
-const name stub_tester::game_name = N(multi_stubgame);
+const name stub_tester::game_name = N(mstubgame);
 
 BOOST_AUTO_TEST_SUITE(stub_tests)
 
