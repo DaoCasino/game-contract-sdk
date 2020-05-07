@@ -12,14 +12,9 @@ using session_id_t = uint64_t;
 // simple stub game
 class [[eosio::contract]] multi_stub : public game_sdk::game {
   public:
-    static constexpr uint16_t first_action{0u};
-    static constexpr uint16_t second_action{1u};
-    static constexpr uint16_t third_action{2u};
-
     struct [[eosio::table("roll")]] roll_row {
         uint64_t ses_id;
         std::vector<game_sdk::param_t> event_numbers;
-        std::vector<checksum256>       event_numbers;
 
         uint64_t primary_key() const { return ses_id; }
     };
