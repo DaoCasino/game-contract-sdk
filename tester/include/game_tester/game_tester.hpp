@@ -102,22 +102,21 @@ class game_tester : public TESTER {
 
         auto pl_key = new_rsa_keys();
         rsa_keys.insert(std::make_pair(platform_name, std::move(pl_key)));
-        base_tester::push_action(platform_name,
-                                 N(setrsakey),
-                                 platform_name,
-                                 mvo()("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(platform_name))));
+        push_action(platform_name,
+                    N(setrsakey),
+                    platform_name,
+                    mvo()("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(platform_name))));
 
-        base_tester::push_action(events_name, N(setplatform), events_name, mvo()("platform_name", platform_name));
-        base_tester::push_action(casino_name, N(setplatform), casino_name, mvo()("platform_name", platform_name));
+        push_action(events_name, N(setplatform), events_name, mvo()("platform_name", platform_name));
+        push_action(casino_name, N(setplatform), casino_name, mvo()("platform_name", platform_name));
 
-        base_tester::push_action(
-            platform_name, N(addcas), platform_name, mvo()("contract", casino_name)("meta", bytes()));
+        push_action(platform_name, N(addcas), platform_name, mvo()("contract", casino_name)("meta", bytes()));
 
         rsa_keys.insert(std::make_pair(casino_name, new_rsa_keys()));
-        base_tester::push_action(platform_name,
-                                 N(setrsacas),
-                                 platform_name,
-                                 mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
+        push_action(platform_name,
+                    N(setrsacas),
+                    platform_name,
+                    mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
 
         // create permissions for signidice
         set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
@@ -167,6 +166,14 @@ class game_tester : public TESTER {
         // clang-format on
     }
 
+    std::optional<std::vector<fc::variant>> get_events(const events_id event_id) {
+        if (auto it = _events.find(event_id); it != _events.end()) {
+            return {it->second};
+        } else {
+            return std::nullopt;
+        }
+    }
+
     action_result push_action(const action_name& contract,
                               const action_name& name,
                               const action_name& actor,
@@ -178,32 +185,30 @@ class game_tester : public TESTER {
         act.name = name;
         act.data = abi_ser[contract].variant_to_binary(action_type_name, data, abi_serializer_max_time);
 
-        return base_tester::push_action(std::move(act), actor);
+        return push_action(std::move(act), actor);
     }
 
-    std::optional<std::vector<fc::variant>> get_events(const events_id event_id) {
-        if (auto it = _events.find(event_id); it != _events.end()) {
-            return {it->second};
-        } else {
-            return std::nullopt;
+    action_result push_action(action&& act, uint64_t authorizer) {
+        signed_transaction trx;
+        if (authorizer) {
+            act.authorization = vector<permission_level>{{account_name(authorizer), config::active_name}};
         }
-    }
+        trx.actions.emplace_back(std::move(act));
+        set_transaction_headers(trx);
+        if (authorizer) {
+            trx.sign(get_private_key(account_name(authorizer), "active"), control->get_chain_id());
+        }
 
-    transaction_trace_ptr push_transaction(packed_transaction& trx,
-                                           fc::time_point deadline = fc::time_point::maximum(),
-                                           uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US) {
-        const auto result = base_tester::push_transaction(trx, deadline, billed_cpu_time_us);
-        handle_transaction_ptr(result);
-        return result;
-    }
-
-    transaction_trace_ptr push_transaction(signed_transaction& trx,
-                                           fc::time_point deadline = fc::time_point::maximum(),
-                                           uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US,
-                                           bool no_throw = false) {
-        const auto result = base_tester::push_transaction(trx, deadline, billed_cpu_time_us, no_throw);
-        handle_transaction_ptr(result);
-        return result;
+        try {
+            handle_transaction_ptr(push_transaction(trx));
+        } catch (const fc::exception& ex) {
+            edump((ex.to_detail_string()));
+            return error(ex.top_message()); // top_message() is assumed by many tests; otherwise they fail
+                                            // return error(ex.to_detail_string());
+        }
+        produce_block();
+        BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trx.id()));
+        return success();
     }
 
     action_result push_action(const action_name& contract,
@@ -228,7 +233,7 @@ class game_tester : public TESTER {
         trx.sign(get_private_key(key.actor, key.permission.to_string()), control->get_chain_id());
 
         try {
-            push_transaction(trx);
+            handle_transaction_ptr(push_transaction(trx));
         } catch (const fc::exception& ex) {
             edump((ex.to_detail_string()));
             return error(ex.top_message()); // top_message() is assumed by many
@@ -294,18 +299,17 @@ class game_tester : public TESTER {
 
         deploy_contract<Contract>(game_name);
 
-        base_tester::push_action(
-            game_name,
-            N(init),
-            game_name,
-            mvo()("platform", platform_name)("events", events_name)("session_ttl", game_session_ttl));
+        push_action(game_name,
+                    N(init),
+                    game_name,
+                    mvo()("platform", platform_name)("events", events_name)("session_ttl", game_session_ttl));
 
-        base_tester::push_action(platform_name,
-                                 N(addgame),
-                                 platform_name,
-                                 mvo()("contract", game_name)("params_cnt", params.size())("meta", bytes()));
+        push_action(platform_name,
+                    N(addgame),
+                    platform_name,
+                    mvo()("contract", game_name)("params_cnt", params.size())("meta", bytes()));
 
-        base_tester::push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
+        push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
 
         // allow platform to make signidice action in this game
         link_authority(platform_name, game_name, N(signidice), N(sgdicefirst));
