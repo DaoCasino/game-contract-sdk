@@ -18,7 +18,8 @@ class [[eosio::contract]] multi_stub : public game_sdk::game {
 
     struct [[eosio::table("roll")]] roll_row {
         uint64_t ses_id;
-        std::vector<game_sdk::param_t> counter;
+        std::vector<game_sdk::param_t> event_numbers;
+        std::vector<checksum256> random_numbers;
 
         uint64_t primary_key() const { return ses_id; }
     };
