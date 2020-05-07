@@ -21,6 +21,9 @@ void multi_stub::on_action(uint64_t ses_id, uint16_t type, std::vector<game_sdk:
     if (params.size() != 1)
         return eosio::check(false, "Wrong params size.");
 
+    if (params[0] == 0)
+        return eosio::check(false, "First param can't be zero.");
+
     rolls.modify(it, get_self(), [&](auto& row) {
         if (row.event_numbers.size() == 0) {
             row.random_numbers.resize(params[0]);
