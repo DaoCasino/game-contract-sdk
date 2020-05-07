@@ -189,6 +189,23 @@ class game_tester : public TESTER {
         }
     }
 
+    transaction_trace_ptr push_transaction(packed_transaction& trx,
+                                           fc::time_point deadline = fc::time_point::maximum(),
+                                           uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US) {
+        const auto result = base_tester::push_transaction(trx, deadline, billed_cpu_time_us);
+        handle_transaction_ptr(result);
+        return result;
+    }
+
+    transaction_trace_ptr push_transaction(signed_transaction& trx,
+                                           fc::time_point deadline = fc::time_point::maximum(),
+                                           uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US,
+                                           bool no_throw = false) {
+        const auto result = base_tester::push_transaction(trx, deadline, billed_cpu_time_us, no_throw);
+        handle_transaction_ptr(result);
+        return result;
+    }
+
     action_result push_action(const action_name& contract,
                               const action_name& name,
                               const permission_level& auth,
@@ -211,7 +228,7 @@ class game_tester : public TESTER {
         trx.sign(get_private_key(key.actor, key.permission.to_string()), control->get_chain_id());
 
         try {
-            handle_transaction_ptr(push_transaction(trx));
+            push_transaction(trx);
         } catch (const fc::exception& ex) {
             edump((ex.to_detail_string()));
             return error(ex.top_message()); // top_message() is assumed by many
