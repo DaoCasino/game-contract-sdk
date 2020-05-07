@@ -88,8 +88,14 @@ BOOST_FIXTURE_TEST_CASE(full_session_actions_success_test, stub_tester) try {
     game_action(game_name, ses_id, 0, {3});
     signidice(game_name, ses_id);
 
-    game_action(game_name, ses_id, 1, {3});
+    game_action(game_name, ses_id, 1, {2});
     signidice(game_name, ses_id);
+
+    game_action(game_name, ses_id, 2, {1});
+    signidice(game_name, ses_id);
+
+    const auto session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session.is_null(), true);
 }
 FC_LOG_AND_RETHROW()
 
