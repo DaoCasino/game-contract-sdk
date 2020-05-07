@@ -541,7 +541,7 @@ class game : public eosio::contract {
             .send();
     }
 
-    uint64_t get_ses_id(const std::string& str) const { return std::stoul(str); }
+    uint64_t get_ses_id(const std::string& str) const { return std::stoull(str); }
 
     uint64_t get_self_id() const { return platform::read::get_game(get_platform(), get_self()).id; }
 
