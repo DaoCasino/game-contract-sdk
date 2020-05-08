@@ -97,7 +97,8 @@ BOOST_FIXTURE_TEST_CASE(full_session_actions_success_test, stub_tester) try {
         expected.emplace_back(rand());
         game_action(game_name, ses_id, index, {expected.back()});
         signidice(game_name, ses_id);
-        const auto msg_event = get_events(events_id::game_message);
+
+        const auto msg_event = get_events(events_id::game_message); // Event with random number
         BOOST_REQUIRE(msg_event != std::nullopt);
         BOOST_REQUIRE_EQUAL(msg_event->size(), 1);
     }
