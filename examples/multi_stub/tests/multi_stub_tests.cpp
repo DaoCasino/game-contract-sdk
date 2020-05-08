@@ -87,10 +87,6 @@ BOOST_FIXTURE_TEST_CASE(full_session_actions_success_test, stub_tester) try {
 
     game_action(game_name, ses_id, 0, {3});
     signidice(game_name, ses_id);
-    if (const auto msg = get_events(events_id::game_message); msg != std::nullopt)
-    {
-        const auto values = msg.value()[0].as<std::vector<uint64_t>>();
-    }
 
     game_action(game_name, ses_id, 1, {2});
     signidice(game_name, ses_id);
