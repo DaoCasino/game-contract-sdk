@@ -65,6 +65,16 @@ using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&::EVP_PKEY_free)>;
 
 namespace testing {
 
+enum struct events_id {
+    game_started = 0,
+    action_request = 1,
+    signidice_part_1_request = 2,
+    signidice_part_2_request = 3,
+    game_finished = 4,
+    game_failed = 5,
+    game_message = 6
+};
+
 class game_tester : public TESTER {
   public:
     constexpr static uint32_t game_session_ttl = 60 * 10;
@@ -92,26 +102,28 @@ class game_tester : public TESTER {
 
         auto pl_key = new_rsa_keys();
         rsa_keys.insert(std::make_pair(platform_name, std::move(pl_key)));
-        base_tester::push_action(platform_name,
-                                 N(setrsakey),
-                                 platform_name,
-                                 mvo()("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(platform_name))));
+        push_action(platform_name,
+                    N(setrsakey),
+                    platform_name,
+                    mvo()("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(platform_name))));
 
-        base_tester::push_action(events_name, N(setplatform), events_name, mvo()("platform_name", platform_name));
-        base_tester::push_action(casino_name, N(setplatform), casino_name, mvo()("platform_name", platform_name));
+        push_action(events_name, N(setplatform), events_name, mvo()("platform_name", platform_name));
+        push_action(casino_name, N(setplatform), casino_name, mvo()("platform_name", platform_name));
 
-        base_tester::push_action(
-            platform_name, N(addcas), platform_name, mvo()("contract", casino_name)("meta", bytes()));
+        push_action(platform_name, N(addcas), platform_name, mvo()("contract", casino_name)("meta", bytes()));
 
         rsa_keys.insert(std::make_pair(casino_name, new_rsa_keys()));
-        base_tester::push_action(platform_name,
-                                 N(setrsacas),
-                                 platform_name,
-                                 mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
+        push_action(platform_name,
+                    N(setrsacas),
+                    platform_name,
+                    mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
 
         // create permissions for signidice
         set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
         set_authority(casino_name, N(signidice), {get_public_key(casino_name, "signidice")}, N(active));
+
+        const auto platform_abi_def = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
+        _platform_abi_ser = abi_serializer(platform_abi_def, abi_serializer_max_time);
     }
 
     template <typename Contract> void deploy_contract(account_name account) {
@@ -140,10 +152,26 @@ class game_tester : public TESTER {
     }
 
     action_result transfer(const name& from, const name& to, const asset& amount, const std::string& memo = "") {
-        return push_action(N(eosio.token),
-                           N(transfer),
-                           from,
-                           mutable_variant_object()("from", from)("to", to)("quantity", amount)("memo", memo));
+        // clang-format off
+        return push_action(
+            N(eosio.token),
+            N(transfer),
+            from,
+            mutable_variant_object()
+               ("from", from)
+               ("to", to)
+               ("quantity", amount)
+               ("memo", memo)
+        );
+        // clang-format on
+    }
+
+    std::optional<std::vector<fc::variant>> get_events(const events_id event_id) {
+        if (auto it = _events.find(event_id); it != _events.end()) {
+            return {it->second};
+        } else {
+            return std::nullopt;
+        }
     }
 
     action_result push_action(const action_name& contract,
@@ -157,7 +185,30 @@ class game_tester : public TESTER {
         act.name = name;
         act.data = abi_ser[contract].variant_to_binary(action_type_name, data, abi_serializer_max_time);
 
-        return base_tester::push_action(std::move(act), actor);
+        return push_action(std::move(act), actor);
+    }
+
+    action_result push_action(action&& act, uint64_t authorizer) {
+        signed_transaction trx;
+        if (authorizer) {
+            act.authorization = vector<permission_level>{{account_name(authorizer), config::active_name}};
+        }
+        trx.actions.emplace_back(std::move(act));
+        set_transaction_headers(trx);
+        if (authorizer) {
+            trx.sign(get_private_key(account_name(authorizer), "active"), control->get_chain_id());
+        }
+
+        try {
+            handle_transaction_ptr(push_transaction(trx));
+        } catch (const fc::exception& ex) {
+            edump((ex.to_detail_string()));
+            return error(ex.top_message()); // top_message() is assumed by many tests; otherwise they fail
+                                            // return error(ex.to_detail_string());
+        }
+        produce_block();
+        BOOST_REQUIRE_EQUAL(true, chain_has_transaction(trx.id()));
+        return success();
     }
 
     action_result push_action(const action_name& contract,
@@ -182,7 +233,7 @@ class game_tester : public TESTER {
         trx.sign(get_private_key(key.actor, key.permission.to_string()), control->get_chain_id());
 
         try {
-            push_transaction(trx);
+            handle_transaction_ptr(push_transaction(trx));
         } catch (const fc::exception& ex) {
             edump((ex.to_detail_string()));
             return error(ex.top_message()); // top_message() is assumed by many
@@ -248,18 +299,17 @@ class game_tester : public TESTER {
 
         deploy_contract<Contract>(game_name);
 
-        base_tester::push_action(
-            game_name,
-            N(init),
-            game_name,
-            mvo()("platform", platform_name)("events", events_name)("session_ttl", game_session_ttl));
+        push_action(game_name,
+                    N(init),
+                    game_name,
+                    mvo()("platform", platform_name)("events", events_name)("session_ttl", game_session_ttl));
 
-        base_tester::push_action(platform_name,
-                                 N(addgame),
-                                 platform_name,
-                                 mvo()("contract", game_name)("params_cnt", params.size())("meta", bytes()));
+        push_action(platform_name,
+                    N(addgame),
+                    platform_name,
+                    mvo()("contract", game_name)("params_cnt", params.size())("meta", bytes()));
 
-        base_tester::push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
+        push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
 
         // allow platform to make signidice action in this game
         link_authority(platform_name, game_name, N(signidice), N(sgdicefirst));
@@ -402,9 +452,87 @@ class game_tester : public TESTER {
                             : abi_ser[game_name].binary_to_variant("session_row", data, abi_serializer_max_time);
     }
 
+  private:
+    const abi_def& get_events_abi(const events_id event_type) {
+        if (_lazy_abi_events.find(event_type) != _lazy_abi_events.end()) {
+            return _lazy_abi_events[event_type];
+        }
+
+        fc::path event_abi = fc::canonical(events_struct::folder());
+
+        switch (event_type) {
+        case events_id::game_started:
+            event_abi /= "game_started.abi";
+            break;
+        case events_id::action_request:
+            event_abi /= "action_request.abi";
+            break;
+        case events_id::signidice_part_1_request:
+            event_abi /= "signidice_part_1_request.abi";
+            break;
+        case events_id::signidice_part_2_request:
+            event_abi /= "signidice_part_2_request.abi";
+            break;
+        case events_id::game_finished:
+            event_abi /= "game_finished.abi";
+            break;
+        case events_id::game_failed:
+            event_abi /= "game_failed.abi";
+            break;
+        case events_id::game_message:
+            event_abi /= "game_message.abi";
+            break;
+        default:
+            BOOST_TEST_FAIL("Can't interpret event type");
+        }
+
+        _lazy_abi_events[event_type] = fc::json::from_file(event_abi).as<abi_def>();
+
+        return _lazy_abi_events[event_type];
+    }
+
+    void handle_action_data(bytes&& action_data, const events_id event_type) {
+        fc::variant event_struct;
+        if (!action_data.empty()) {
+            abi_serializer abi_ser(get_events_abi(event_type), abi_serializer_max_time);
+
+            event_struct = abi_ser.binary_to_variant("event_data", action_data, abi_serializer_max_time);
+        }
+
+        if (auto it = _events.find(event_type); it != _events.end()) {
+            it->second.emplace_back(std::move(event_struct));
+        } else {
+            _events[event_type] = {
+                event_struct,
+            };
+        }
+    }
+
+    void handle_transaction_ptr(const transaction_trace_ptr& transaction_trace) {
+        _events.clear();
+
+        std::for_each(transaction_trace->action_traces.begin(),
+                      transaction_trace->action_traces.end(),
+                      [&](const auto& action_trace) {
+                          if (action_trace.receiver != "events" || action_trace.act.name != "send")
+                              return;
+
+                          const fc::variant send_action = _platform_abi_ser.binary_to_variant(
+                              "send", action_trace.act.data, abi_serializer_max_time);
+
+                          handle_action_data(send_action["data"].as<bytes>(),
+                                             static_cast<events_id>(send_action["event_type"].as<int>()));
+                      });
+    }
+
   public:
     std::map<account_name, abi_serializer> abi_ser;
     std::map<account_name, RSA_ptr> rsa_keys;
+
+  private:
+    std::unordered_map<events_id, std::vector<fc::variant>> _events;
+    std::unordered_map<events_id, abi_def> _lazy_abi_events;
+    abi_serializer _platform_abi_ser;
 };
 
 } // namespace testing
