@@ -181,6 +181,8 @@ class game_tester : public TESTER {
         return base_tester::push_action(std::move(act), actor);
     }
 
+    const std::unordered_map<events_id, std::vector<fc::variant>>& get_events_map() const { return _events; }
+
     std::optional<std::vector<fc::variant>> get_events(const events_id event_id) {
         if (auto it = _events.find(event_id); it != _events.end()) {
             return {it->second};

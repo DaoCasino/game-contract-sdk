@@ -73,7 +73,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_one_action_success_test, stub_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(full_session_actions_success_test, stub_tester) try {
+BOOST_FIXTURE_TEST_CASE(full_session_three_actions_success_test, stub_tester) try {
     const auto player_name = N(player);
 
     create_player(player_name);
