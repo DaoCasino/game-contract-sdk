@@ -66,9 +66,6 @@ BOOST_FIXTURE_TEST_CASE(full_session_one_action_success_test, stub_tester) try {
 
     signidice(game_name, ses_id);
 
-    auto casino_balance_after = get_balance(casino_name);
-    auto player_balance_after = get_balance(player_name);
-
     session = get_game_session(game_name, ses_id);
     BOOST_REQUIRE_EQUAL(session.is_null(), true);
 }
