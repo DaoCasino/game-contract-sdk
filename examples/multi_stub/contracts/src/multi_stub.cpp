@@ -4,7 +4,6 @@ namespace multi_stub {
 
 void multi_stub::on_new_game(session_id_t ses_id) {
     rolls.emplace(get_self(), [&](auto& row) { row.ses_id = ses_id; });
-
     require_action(0); // Require event with count of events
 }
 
