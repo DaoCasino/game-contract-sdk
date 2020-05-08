@@ -1,4 +1,5 @@
 #include <game_tester/game_tester.hpp>
+#include <vector>
 
 #include "contracts.hpp"
 
@@ -73,7 +74,7 @@ BOOST_FIXTURE_TEST_CASE(full_session_one_action_success_test, stub_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE(full_session_three_actions_success_test, stub_tester) try {
+BOOST_FIXTURE_TEST_CASE(full_session_actions_success_test, stub_tester) try {
     const auto player_name = N(player);
 
     create_player(player_name);
@@ -85,17 +86,30 @@ BOOST_FIXTURE_TEST_CASE(full_session_three_actions_success_test, stub_tester) tr
     auto player_bet = STRSYM("5.0000");
     auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
 
-    game_action(game_name, ses_id, 0, {3});
+    const unsigned int count = 1 + rand() % 256;
+
+    game_action(game_name, ses_id, 0, {count}); // Send count of all actions
     signidice(game_name, ses_id);
 
-    game_action(game_name, ses_id, 1, {2});
-    signidice(game_name, ses_id);
+    std::vector<uint64_t> expected = {count,};
 
-    game_action(game_name, ses_id, 2, {1});
-    signidice(game_name, ses_id);
+    for (auto index = 1; index != count; ++index) {
+        expected.emplace_back(rand());
+        game_action(game_name, ses_id, index, {expected.back()});
+        signidice(game_name, ses_id);
+        const auto msg_event = get_events(events_id::game_message);
+        BOOST_REQUIRE(msg_event != std::nullopt);
+        BOOST_REQUIRE_EQUAL(msg_event->size(), 1);
+    }
 
     const auto session = get_game_session(game_name, ses_id);
     BOOST_REQUIRE_EQUAL(session.is_null(), true);
+
+    const auto finish_event = get_events(events_id::game_finished);
+    BOOST_REQUIRE(finish_event != std::nullopt); // Can't find finish game event.
+    BOOST_REQUIRE_EQUAL(finish_event->size(), 1);
+    const auto values = fc::raw::unpack<std::vector<uint64_t>>(finish_event.value()[0]["msg"].as<bytes>());
+    BOOST_CHECK_EQUAL_COLLECTIONS(expected.begin(), expected.end(), values.begin(), values.end());
 }
 FC_LOG_AND_RETHROW()
 

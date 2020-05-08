@@ -40,11 +40,11 @@ void multi_stub::on_random(uint64_t ses_id, checksum256 rand) {
     send_game_message(std::vector<game_sdk::param_t>{service::cut_to<game_sdk::param_t>(rand)});
 
     const uint8_t current_action = it->event_numbers.size();
-    eosio::print("current", current_action);
+    eosio::print("Current action: ", current_action);
     if (current_action < it->event_numbers[0]) {
         require_action(current_action + 1);
     } else {
-        finish_game(zero_asset);
+        finish_game(zero_asset, it->event_numbers);
     }
 }
 
