@@ -188,6 +188,8 @@ class game_tester : public TESTER {
         return push_action(std::move(act), actor);
     }
 
+    const std::unordered_map<events_id, std::vector<fc::variant>>& get_events_map() const { return _events; }
+
     action_result push_action(action&& act, uint64_t authorizer) {
         signed_transaction trx;
         if (authorizer) {
