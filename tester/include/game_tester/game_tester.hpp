@@ -122,7 +122,7 @@ class game_tester : public TESTER {
         set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
         set_authority(casino_name, N(signidice), {get_public_key(casino_name, "signidice")}, N(active));
 
-        set_authority(platform_name, N(newgame), {get_public_key(platform_name, "game")}, N(active));
+        set_authority(platform_name, N(gameaction), {get_public_key(platform_name, "gameaction")}, N(active));
 
         const auto platform_abi_def = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
         _platform_abi_ser = abi_serializer(platform_abi_def, abi_serializer_max_time);
@@ -319,7 +319,9 @@ class game_tester : public TESTER {
         link_authority(platform_name, game_name, N(signidice), N(sgdicefirst));
 
         // allow platform to make newgame action in this game
-        link_authority(platform_name, game_name, N(game), N(newgame));
+        link_authority(platform_name, game_name, N(gameaction), N(newgame));
+        link_authority(platform_name, game_name, N(gameaction), N(gameaction));
+        link_authority(platform_name, game_name, N(gameaction), N(close));
 
         // allow casino to make signidice action in this game
         link_authority(casino_name, game_name, N(signidice), N(sgdicesecond));
@@ -359,11 +361,15 @@ class game_tester : public TESTER {
                         mvo()("from", player)("to", game_name)("quantity", deposit)("memo", std::to_string(ses_id))),
             success());
 
-        BOOST_REQUIRE_EQUAL(push_action(game_name,
-                                        N(newgame),
-                                        {platform_name, N(game)},
-                                        mvo()("req_id", ses_id)("casino_id", casino_id)),
-                            success());
+        // format-clang off
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name,
+                N(newgame),
+                {platform_name, N(gameaction)},
+                mvo()("req_id", ses_id)("casino_id", casino_id)
+            ), success());
+        // format-clang on
 
         return ses_id++;
     }
@@ -380,12 +386,13 @@ class game_tester : public TESTER {
         }
 
         // format-clang off
-        BOOST_REQUIRE_EQUAL(push_action(game_name,
-                                        N(gameaction),
-                                        {player, N(game)},
-                                        {platform_name, N(active)},
-                                        mvo()("req_id", ses_id)("type", action_type)("params", params)),
-                            success());
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name,
+                N(gameaction),
+                {platform_name, N(gameaction)},
+                mvo()("req_id", ses_id)("type", action_type)("params", params)
+            ), success());
         // format-clang on
     }
 
