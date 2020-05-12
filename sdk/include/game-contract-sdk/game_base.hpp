@@ -38,7 +38,7 @@ using param_t = uint64_t;
 class game : public eosio::contract {
   public:
     using eosio::contract::contract;
-    static constexpr name player_game_permission = "game"_n;
+    static constexpr name platform_game_permission = "gameaction"_n;
     static constexpr name platform_signidice_permission = "signidice"_n;
     static constexpr name casino_signidice_permission = "signidice"_n;
     static constexpr symbol core_symbol = symbol("BET", 4);
@@ -365,7 +365,7 @@ class game : public eosio::contract {
         check_active_game_in_casino(casino_id);
 
         /* auth & state checks */
-        check_from_player(session);
+        check_from_platform_game();
         check_not_expired(session);
         check_only_states(session, {state::req_start}, "state should be 'req_start'");
 
@@ -396,7 +396,7 @@ class game : public eosio::contract {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 
-        check_from_player(session);
+        check_from_platform_game();
         check_not_expired(session);
 
         // allow `req_deposit` in case of zero deposit from player
@@ -652,7 +652,7 @@ class game : public eosio::contract {
         eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't active in platform");
     }
 
-    void check_from_player(const session_row& ses) const { require_auth({ses.player, player_game_permission}); }
+    void check_from_platform_game() const { require_auth({get_platform(), platform_game_permission}); }
 
     void check_from_casino_signidice(const session_row& ses) const {
         require_auth({get_casino(ses.casino_id), casino_signidice_permission});

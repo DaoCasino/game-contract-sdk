@@ -195,7 +195,7 @@ BOOST_FIXTURE_TEST_CASE(new_session_bad_auth_test, stub_tester) try {
             mvo()
                 ("req_id", ses_id)
                 ("casino_id", casino_id)
-        ), "missing authority of player/game");
+        ), "missing authority of platform/gameaction");
     // clang-format on
 }
 FC_LOG_AND_RETHROW()
@@ -225,7 +225,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, stub_tester) try {
                 ("params", std::vector<uint32_t>{30})
         ).find("but does not have signatures for it") != std::string::npos);
 
-    BOOST_REQUIRE_EQUAL(
+    BOOST_TEST_REQUIRE(
         push_action(
             game_name,
             N(gameaction),
@@ -235,7 +235,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_auth_test, stub_tester) try {
                 ("req_id", ses_id)
                 ("type", 0)
                 ("params", std::vector<uint32_t>{30})
-        ), "missing authority of player/game");
+        ) != success());
     // clang-format on
 }
 FC_LOG_AND_RETHROW()
@@ -295,8 +295,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, stub_tester) try {
         push_action(
             game_name,
             N(gameaction),
-            {player_name, N(game)},
-            {platform_name, N(active)},
+            {platform_name, N(gameaction)},
             mvo()
                 ("req_id", ses_id)
                 ("type", 0)
@@ -320,8 +319,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, stub_tester) try {
         push_action(
             game_name,
             N(gameaction),
-            {player_name, N(game)},
-            {platform_name, N(active)},
+            {platform_name, N(gameaction)},
             mvo()
                 ("req_id", ses_id)
                 ("type", 0)
