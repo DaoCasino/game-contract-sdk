@@ -38,7 +38,6 @@ using param_t = uint64_t;
 class game : public eosio::contract {
   public:
     using eosio::contract::contract;
-    static constexpr name player_game_permission = "game"_n;
     static constexpr name platform_game_permission = "gameaction"_n;
     static constexpr name platform_signidice_permission = "signidice"_n;
     static constexpr name casino_signidice_permission = "signidice"_n;
