@@ -653,8 +653,6 @@ class game : public eosio::contract {
         eosio::check(platform::read::is_active_casino(get_platform(), casino_id), "casino is't active in platform");
     }
 
-    void check_from_player(const session_row& ses) const { require_auth({ses.player, player_game_permission}); }
-
     void check_from_platform_game() const { require_auth({get_platform(), platform_game_permission}); }
 
     void check_from_casino_signidice(const session_row& ses) const {
