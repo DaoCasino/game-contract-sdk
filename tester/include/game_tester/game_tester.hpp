@@ -122,6 +122,8 @@ class game_tester : public TESTER {
         set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
         set_authority(casino_name, N(signidice), {get_public_key(casino_name, "signidice")}, N(active));
 
+        set_authority(platform_name, N(newgame), {get_public_key(platform_name, "game")}, N(active));
+
         const auto platform_abi_def = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
         _platform_abi_ser = abi_serializer(platform_abi_def, abi_serializer_max_time);
     }
@@ -316,6 +318,9 @@ class game_tester : public TESTER {
         // allow platform to make signidice action in this game
         link_authority(platform_name, game_name, N(signidice), N(sgdicefirst));
 
+        // allow platform to make newgame action in this game
+        link_authority(platform_name, game_name, N(game), N(newgame));
+
         // allow casino to make signidice action in this game
         link_authority(casino_name, game_name, N(signidice), N(sgdicesecond));
 
@@ -356,8 +361,7 @@ class game_tester : public TESTER {
 
         BOOST_REQUIRE_EQUAL(push_action(game_name,
                                         N(newgame),
-                                        {player, N(game)},
-                                        {platform_name, N(active)},
+                                        {platform_name, N(game)},
                                         mvo()("req_id", ses_id)("casino_id", casino_id)),
                             success());
 

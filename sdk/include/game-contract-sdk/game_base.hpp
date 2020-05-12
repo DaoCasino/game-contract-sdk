@@ -39,6 +39,7 @@ class game : public eosio::contract {
   public:
     using eosio::contract::contract;
     static constexpr name player_game_permission = "game"_n;
+    static constexpr name platform_game_permission = "game"_n;
     static constexpr name platform_signidice_permission = "signidice"_n;
     static constexpr name casino_signidice_permission = "signidice"_n;
     static constexpr symbol core_symbol = symbol("BET", 4);
@@ -365,7 +366,7 @@ class game : public eosio::contract {
         check_active_game_in_casino(casino_id);
 
         /* auth & state checks */
-        check_from_player(session);
+        check_from_platform_game();
         check_not_expired(session);
         check_only_states(session, {state::req_start}, "state should be 'req_start'");
 
@@ -653,6 +654,8 @@ class game : public eosio::contract {
     }
 
     void check_from_player(const session_row& ses) const { require_auth({ses.player, player_game_permission}); }
+
+    void check_from_platform_game() const { require_auth({get_platform(), platform_game_permission}); }
 
     void check_from_casino_signidice(const session_row& ses) const {
         require_auth({get_casino(ses.casino_id), casino_signidice_permission});
