@@ -35,7 +35,7 @@ std::array<uint64_t, 4> split(const checksum256& raw) {
 struct PRNG {
     using Ptr = std::shared_ptr<PRNG>;
 
-    virtual ~PRNG();
+    virtual ~PRNG() = 0;
     virtual uint64_t next() = 0;
 };
 
