@@ -1,7 +1,13 @@
 macro(add_game_contract TARGET)
     add_executable(${TARGET} ${ARGN})
     target_compile_options(${TARGET} PUBLIC -contract=${TARGET} -DNOABI)
+
+    if(IS_DEBUG)
+        target_compile_options(${TARGET} PUBLIC -DIS_DEBUG=on)
+    endif()
+
     target_link_libraries(${TARGET} game-contract-sdk)
+
     add_custom_command(TARGET ${TARGET} POST_BUILD
         COMMAND python3
             ${GAME_SDK_PATH}/sdk/scripts/abi-merger.py
@@ -9,6 +15,17 @@ macro(add_game_contract TARGET)
             ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
             ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
     )
+
+    if(IS_DEBUG)
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND python3
+                ${GAME_SDK_PATH}/sdk/scripts/abi-merger.py
+                ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
+                ${GAME_SDK_PATH}/sdk/files/debug.abi
+                ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.abi
+        )
+    endif()
+
 endmacro()
 
 macro(load_daobet_contracts VERSION)
@@ -50,8 +67,6 @@ macro(add_game_test TARGET)
     if(IS_DEBUG)
         target_compile_options(${TARGET} PUBLIC -DIS_DEBUG=on)
     endif()
-
-    unset(IS_DEBUG CACHE)
 
     target_link_libraries(${TARGET} game-tester)
 endmacro()
