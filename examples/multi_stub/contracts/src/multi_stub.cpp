@@ -17,8 +17,13 @@ void multi_stub::on_action(session_id_t ses_id, uint16_t type, std::vector<game_
     if (params.size() != 1)
         return eosio::check(false, "Wrong params size.");
 
-    if (it->event_numbers.empty() && params[0] == 0)
-        return eosio::check(false, "First param in zero action can't be zero.");
+    if (it->event_numbers.empty()) {
+        if (params[0] == 0) {
+            return eosio::check(false, "First param in zero action can't be zero.");
+        } else if (params[0] > std::numeric_limits<uint16_t>::max()) {
+            return eosio::check(false, "First param is too large");
+        }
+    }
 
     rolls.modify(it, get_self(), [&](auto& row) {
         if (row.event_numbers.empty())
@@ -35,10 +40,10 @@ void multi_stub::on_random(session_id_t ses_id, checksum256 rand) {
 
     send_game_message(std::vector<game_sdk::param_t>{service::cut_to<game_sdk::param_t>(rand)});
 
-    const uint8_t current_action = it->event_numbers.size();
+    const auto current_action = it->event_numbers.size();
     if (current_action < it->event_numbers[0]) {
         eosio::print("Current action: ", current_action, "\n");
-        require_action(current_action + 1);
+        require_action(current_action);
     } else {
         eosio::print("Finish game at action: ", current_action, "\n");
         finish_game(zero_asset, it->event_numbers);
