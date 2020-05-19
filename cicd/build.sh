@@ -13,7 +13,7 @@ readonly boost_root="$node_root/src/boost_1_70_0"
 readonly cdt_root=/usr/opt/eosio.cdt/1.6.3
 
 readonly ncores="$(getconf _NPROCESSORS_ONLN)" # no nproc on macos :(
-readonly build_dir="$PROGPATH"/../build
+build_dir="$PROGPATH"/../build
 
 #---------- command-line options ----------#
 
@@ -95,6 +95,8 @@ cmake_flags=(
 
 make_flags=(-j "$ncores")
 [[ "$verbose" == n ]] || make_flags+=(VERBOSE=1)
+
+[[ "$is_debug" == n ]] || build_dir=$build_dir"-debug"
 
 mkdir -p "$build_dir"
 pushd "$build_dir"
