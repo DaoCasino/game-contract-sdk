@@ -64,41 +64,6 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
  #define GAME_DISPATCH_HELPER( TYPE,  MEMBERS ) \
     BOOST_PP_SEQ_FOR_EACH( EOSIO_DISPATCH_INTERNAL, TYPE, MEMBERS )
 
-#define GAME_CONTRACT(TYPE)                                                                                            \
-    extern "C" {                                                                                                       \
-    void apply(uint64_t receiver, uint64_t code, uint64_t action) {                                                    \
-        if (code == "eosio.token"_n.value && action == "transfer"_n.value) {                                           \
-            game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::on_transfer);              \
-        } else if (code == receiver) {                                                                                 \
-            switch (action) {                                                                                          \
-            case "init"_n.value:                                                                                       \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::init);                 \
-                break;                                                                                                 \
-            case "newgame"_n.value:                                                                                    \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game);             \
-                break;                                                                                                 \
-            case "gameaction"_n.value:                                                                                 \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action);          \
-                break;                                                                                                 \
-            case "sgdicefirst"_n.value:                                                                                \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_1);     \
-                break;                                                                                                 \
-            case "sgdicesecond"_n.value:                                                                               \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::signidice_part_2);     \
-                break;                                                                                                 \
-            case "close"_n.value:                                                                                      \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close);                \
-                break;                                                                                                 \
-            EXTRA_CHECK(TYPE)                                                                                          \
-            default:                                                                                                   \
-                eosio::eosio_exit(1);                                                                                  \
-            }                                                                                                          \
-        }                                                                                                              \
-        eosio::eosio_exit(0);                                                                                          \
-    }                                                                                                                  \
-    }
-
-
 #define GAME_CONTRACT_CUSTOM_ACTIONS(TYPE, MEMBERS)                                                                    \
     extern "C" {                                                                                                       \
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {                                                    \
@@ -133,3 +98,6 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
         eosio::eosio_exit(0);                                                                                          \
     }                                                                                                                  \
     }
+
+#define GAME_CONTRACT(TYPE)                                                                                            \
+    GAME_CONTRACT_CUSTOM_ACTIONS(TYPE, )
