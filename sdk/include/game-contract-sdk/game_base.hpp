@@ -163,8 +163,9 @@ class game : public eosio::contract {
     // Optional
     // =============================================================
 
-    /* onlinal contract initialization callback */
+    /* contract initialization callback */
     virtual void on_init() {}
+    /* game session finalization callback */
     virtual void on_finish(uint64_t ses_id) {}
 
     // =============================================================
