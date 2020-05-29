@@ -342,16 +342,19 @@ class game_tester : public TESTER {
     }
 
     uint64_t get_next_game_id() {
-        return 0;
-        // TODO fix, invalid ABI:
-        // https://github.com/DaoCasino/platform-contracts/blob/528efa6b06c0f85325d95ab0a6172ab9a71d4268/contracts/platform/include/platform/platform.hpp#L19
-        // vector<char> data = get_row_by_account(platform_name, platform_name,
-        // N(global), N(global) ); return data.empty() ? 0 :
-        // abi_ser[platform_name].binary_to_variant("global_row", data,
-        // abi_serializer_max_time)["games_seq"].as<uint64_t>();
+        vector<char> data = get_row_by_account(platform_name, platform_name, N(global), N(global) );
+        return data.empty()
+            ? 0
+            : abi_ser[platform_name]
+                .binary_to_variant("global_row", data, abi_serializer_max_time)["games_seq"]
+                .as<uint64_t>();
     }
 
-    uint64_t new_game_session(name game_name, name player, uint64_t casino_id, asset deposit) {
+    uint64_t new_game_session(name game_name,
+                              name player,
+                              uint64_t casino_id,
+                              asset deposit,
+                              const action_result& result = success()) {
         static uint64_t ses_id{0u};
 
         BOOST_REQUIRE_EQUAL(
@@ -368,7 +371,7 @@ class game_tester : public TESTER {
                 N(newgame),
                 {platform_name, N(gameaction)},
                 mvo()("req_id", ses_id)("casino_id", casino_id)
-            ), success());
+            ), result);
         // format-clang on
 
         return ses_id++;
@@ -378,7 +381,8 @@ class game_tester : public TESTER {
                      uint64_t ses_id,
                      uint16_t action_type,
                      std::vector<param_t> params,
-                     asset deposit = STRSYM("0")) {
+                     asset deposit = STRSYM("0"),
+                     const action_result& result = success()) {
         auto player = get_game_session(game_name, ses_id)["player"].as<name>();
 
         if (deposit.get_amount() > 0) {
@@ -392,7 +396,7 @@ class game_tester : public TESTER {
                 N(gameaction),
                 {platform_name, N(gameaction)},
                 mvo()("req_id", ses_id)("type", action_type)("params", params)
-            ), success());
+            ), result);
         // format-clang on
     }
 
