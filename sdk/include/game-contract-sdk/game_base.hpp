@@ -343,7 +343,7 @@ class game : public eosio::contract {
             const auto& session = get_session(ses_id);
 
             check_not_expired(session);
-            check_only_states(session, {state::req_deposit}, "state should be 'req_deposit'");
+            check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
             eosio::check(session.player == from, "only player can deposit");
 
             sessions.modify(session, get_self(), [&](auto& row) {
