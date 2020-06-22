@@ -13,7 +13,6 @@
 #include <eosio/serialize.hpp>
 
 #include <game-contract-sdk/dispatcher.hpp>
-#include <game-contract-sdk/rsa.hpp>
 #include <game-contract-sdk/service.hpp>
 
 // abi generator hack
@@ -421,10 +420,11 @@ class game : public eosio::contract {
         check_not_expired(session);
         check_only_states(session, {state::req_signidice_part_1}, "state should be 'req_signidice_part_1'");
 
+        /* obtain platform's rsa key for signidice */
         const auto& platform_rsa_key = platform::read::get_rsa_pubkey(get_platform());
-        eosio::check(daobet::rsa_verify(session.digest, sign, platform_rsa_key), "invalid signature");
 
-        const auto new_digest = eosio::sha256(sign.data(), sign.size());
+        /* check first part sign and calculate new digest */
+        const auto new_digest = service::signidice(session.digest, sign, platform_rsa_key);
 
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.digest = new_digest;
@@ -432,6 +432,7 @@ class game : public eosio::contract {
             obj.state = static_cast<uint8_t>(state::req_signidice_part_2);
         });
 
+        /* emit event for second part of signidice with new digest */
         emit_event(session, events::signidice_part_2_request{new_digest});
     }
 
@@ -444,15 +445,18 @@ class game : public eosio::contract {
         check_not_expired(session);
         check_only_states(session, {state::req_signidice_part_2}, "state should be 'req_signidice_part_2'");
 
+        /* obtain casino's rsa key for signidice */
         const auto& cas_rsa_pubkey = platform::read::get_casino(get_platform(), session.casino_id).rsa_pubkey;
-        eosio::check(daobet::rsa_verify(session.digest, sign, cas_rsa_pubkey), "invalid signature");
-        const auto new_digest = eosio::sha256(sign.data(), sign.size());
+
+        /* check second part sign and calculate resulting digest */
+        const auto new_digest = service::signidice(session.digest, sign, cas_rsa_pubkey);
 
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.digest = new_digest;
             obj.last_update = eosio::current_time_point();
         });
 
+        /* testing stuff for mock signidice result, uses only for testing */
 #ifdef IS_DEBUG
         if (auto& pseudo_queue = global_debug.pseudo_queue; !pseudo_queue.empty()) {
             const checksum256 new_digest = pseudo_queue.back();
@@ -462,6 +466,7 @@ class game : public eosio::contract {
         }
 #endif
 
+        /* return signidice result to game code */
         on_random(ses_id, new_digest);
     }
 

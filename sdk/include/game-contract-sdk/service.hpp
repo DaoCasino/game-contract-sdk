@@ -6,10 +6,18 @@
 #include <eosio/eosio.hpp>
 #include <vector>
 
+#include <game-contract-sdk/rsa.hpp>
+
+
 namespace service {
 using eosio::checksum256;
 
-template <typename T, class = std::enable_if_t<std::is_unsigned<T>::value>> T cut_to(const checksum256& input) {
+// ===================================================================
+// Utility functions for operations with different types of PRNG seed
+// ===================================================================
+template <typename T,
+          class = std::enable_if_t<std::is_unsigned<T>::value>>
+T cut_to(const checksum256& input) {
     return cut_to<uint128_t>(input) % std::numeric_limits<T>::max();
 }
 
@@ -23,7 +31,6 @@ template <> uint128_t cut_to(const checksum256& input) {
 
 std::array<uint64_t, 4> split(const checksum256& raw) {
     const auto& parts = raw.get_array();
-
     return std::array<uint64_t, 4>{
         uint64_t(parts[0] >> 64),
         uint64_t(parts[0]),
@@ -32,6 +39,12 @@ std::array<uint64_t, 4> split(const checksum256& raw) {
     };
 }
 
+
+// ===================================================================
+// Different PRNG implementations
+// ===================================================================
+
+/* Generic PRNG interface */
 struct PRNG {
     using Ptr = std::shared_ptr<PRNG>;
 
@@ -39,8 +52,10 @@ struct PRNG {
     virtual uint64_t next() = 0;
 };
 
-// xoshiro256++ prng algo
-// http://prng.di.unimi.it/
+/**
+   Xoshiro256++ PRNG algo implementation
+   details: http://prng.di.unimi.it/
+*/
 class Xoshiro : public PRNG {
   public:
     explicit Xoshiro(const checksum256& seed) : _s(split(seed)) {}
@@ -74,6 +89,10 @@ class Xoshiro : public PRNG {
     std::array<uint64_t, 4> _s;
 };
 
+/**
+   Mocked implementation of PRNG
+   Uses only for testing purposes
+*/
 class PseudoPRNG : public PRNG {
   public:
     PseudoPRNG(const std::vector<uint64_t>& values) : _values(values), _current(_values.begin()) {}
@@ -90,9 +109,16 @@ class PseudoPRNG : public PRNG {
     std::vector<uint64_t>::iterator _current;
 };
 
+
+// ===================================================================
+// Shuffler functions
+// ===================================================================
+
+/* Shuffler overload for r-value prng */
 template <class RandomIt>
 void shuffle(RandomIt first, RandomIt last, PRNG::Ptr&& prng) { shuffle(first, last, prng); }
 
+/* Standard shuffler implementation proposed by https://en.cppreference.com/w/cpp/algorithm/random_shuffle */
 template <class RandomIt>
 void shuffle(RandomIt first, RandomIt last, PRNG::Ptr& prng) {
     typename std::iterator_traits<RandomIt>::difference_type i, n;
@@ -100,6 +126,25 @@ void shuffle(RandomIt first, RandomIt last, PRNG::Ptr& prng) {
     for (i = n - 1; i > 0; --i) {
         std::swap(first[i], first[prng->next() % (i + 1)]);
     }
+}
+
+
+// ===================================================================
+// SIGNICIDE functions
+// ===================================================================
+
+/**
+   Signidice sign check and calculate new 256-bit digest.
+   Params:
+    - prev_digest - signing digest
+    - sign - rsa sign
+    - pub_key - base64 encoded 2048-bit RSA public key
+   Returns - new 256-bit digest calculated from sign
+*/
+checksum256 signidice(const checksum256& prev_digest, const std::string& sign, const std::string& rsa_key) {
+    eosio::check(daobet::rsa_verify(prev_digest, sign, rsa_key), "invalid rsa signature");
+
+    return eosio::sha256(sign.data(), sign.size());
 }
 
 } // namespace service
