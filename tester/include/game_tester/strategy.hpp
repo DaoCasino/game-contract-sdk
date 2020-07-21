@@ -65,10 +65,15 @@ class Executor {
         for (uint run = 0; run != run_count; ++run) {
             const auto session_id = session_create(tester, run);
 
-            if (!exectute_to_end(tester, _graph.root, session_id, limit_per_run))
+            if (!exectute_to_end(tester, _graph.root, session_id, limit_per_run)) {
                 return run;
+            }
 
             session_close(tester, session_id);
+
+            if (run % 500 == 0) {
+                BOOST_TEST_MESSAGE(run << " rounds passed");
+            }
         }
 
         return run_count;
