@@ -119,7 +119,8 @@ class ShaMixWithRejection : public PRNG {
         auto lucky = to_intx(lucky_as_hash);
 
         while (lucky >= cut_threshold) {
-            lucky_as_hash = eosio::sha256(reinterpret_cast<const char*>(lucky_as_hash.extract_as_byte_array().data()), 32);
+            auto lucky_bytes = lucky_as_hash.extract_as_byte_array();
+            lucky_as_hash = eosio::sha256(reinterpret_cast<const char*>(lucky_bytes.data()), 32);
             lucky = to_intx(lucky_as_hash);
         }
 
@@ -149,7 +150,7 @@ class ShaMixWithRejection : public PRNG {
 
 
   private:
-    intx::uint256 _s;
+    const intx::uint256 _s;
     uint32_t _cur_iter { 0u };
 };
 
