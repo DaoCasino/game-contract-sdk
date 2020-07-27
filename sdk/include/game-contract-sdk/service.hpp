@@ -59,6 +59,7 @@ struct PRNG {
 
 /**
    Xoshiro256++ PRNG algo implementation
+   DO NOT USE IN PRODUCTION (not cryptographically secure)
    details: http://prng.di.unimi.it/
 */
 class Xoshiro : public PRNG {
@@ -97,6 +98,8 @@ class Xoshiro : public PRNG {
 };
 
 /**
+   Implementation of generator based on sha256 mixing with rejection scheme
+   details: https://github.com/DaoCasino/PRNG/blob/master/PRNG.pdf
 */
 class ShaMixWithRejection : public PRNG {
   public:
@@ -111,7 +114,7 @@ class ShaMixWithRejection : public PRNG {
 
         auto lucky_as_hash = mix_bytes();
         auto lucky = to_intx(lucky_as_hash);
-        auto cut_threshold = ((uint256_t(1) << 256) - 1) / delta * delta;
+        static auto cut_threshold = ((uint256_t(1) << 256) - 1) / delta * delta;
 
         while (lucky >= cut_threshold) {
             lucky_as_hash = eosio::sha256(reinterpret_cast<const char*>(lucky_as_hash.extract_as_byte_array().data()), 32);
