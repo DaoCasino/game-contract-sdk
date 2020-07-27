@@ -12,7 +12,6 @@
 
 namespace service {
 using eosio::checksum256;
-using uint256_t = intx::uint256;
 
 // ===================================================================
 // Utility functions for operations with different types of PRNG seed
@@ -103,18 +102,21 @@ class Xoshiro : public PRNG {
 */
 class ShaMixWithRejection : public PRNG {
   public:
+    constexpr static intx::uint256 UINT256_MAX = ~intx::uint256(0);
+
+  public:
     explicit ShaMixWithRejection(const checksum256& seed) : _s(to_intx(seed)) {}
     explicit ShaMixWithRejection(checksum256&& seed) : _s(to_intx(seed)) {}
 
     uint64_t next(uint64_t from, uint64_t to) override {
         eosio::check(to > from, "invalid random range");
-        eosio::check(_cur_iter < UINT_MAX, "too many next() calls");
+        eosio::check(_cur_iter < UINT32_MAX, "too many next() calls");
 
-        uint256_t delta(to - from);
+        const intx::uint256 delta(to - from);
+        const intx::uint256 cut_threshold = UINT256_MAX / delta * delta;
 
         auto lucky_as_hash = mix_bytes();
         auto lucky = to_intx(lucky_as_hash);
-        static auto cut_threshold = ((uint256_t(1) << 256) - 1) / delta * delta;
 
         while (lucky >= cut_threshold) {
             lucky_as_hash = eosio::sha256(reinterpret_cast<const char*>(lucky_as_hash.extract_as_byte_array().data()), 32);
@@ -127,6 +129,7 @@ class ShaMixWithRejection : public PRNG {
   private:
     // 32bytes of seed and 4 of counter
     checksum256 mix_bytes() {
+        static_assert(sizeof(_s) == 32, "invalid `_s` size, should be 32bytes");
         std::array<uint8_t, 36> arr;
         std::memcpy(arr.data(), &_s, sizeof(_s));
         std::memcpy(arr.data() + 32, &_cur_iter, sizeof(_cur_iter));
@@ -136,16 +139,17 @@ class ShaMixWithRejection : public PRNG {
         return eosio::sha256(reinterpret_cast<const char*>(arr.data()), arr.size());
     }
 
-    uint256_t to_intx(const checksum256& hash) {
+    static intx::uint256 to_intx(const checksum256& hash) {
         auto parts = hash.get_array();
-        return uint256_t(
+        return intx::uint256(
             intx::uint128(uint64_t(parts[0] >> 64), uint64_t(parts[0])),
             intx::uint128(uint64_t(parts[1] >> 64), uint64_t(parts[1]))
         );
     }
 
+
   private:
-    uint256_t _s;
+    intx::uint256 _s;
     uint32_t _cur_iter { 0u };
 };
 
