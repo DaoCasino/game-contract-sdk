@@ -107,11 +107,11 @@ class ShaMixWithRejection : public PRNG {
         eosio::check(to > from, "invalid random range");
         eosio::check(_cur_iter < UINT_MAX, "too many next() calls");
 
-        uint256_t delta(to - from + 1);
+        uint256_t delta(to - from);
 
         auto lucky_as_hash = mix_bytes();
         auto lucky = to_intx(lucky_as_hash);
-        auto cut_threshold = (uint256_t(1) << 255) / delta * delta;
+        auto cut_threshold = ((uint256_t(1) << 256) - 1) / delta * delta;
 
         while (lucky >= cut_threshold) {
             lucky_as_hash = eosio::sha256(reinterpret_cast<const char*>(lucky_as_hash.extract_as_byte_array().data()), 32);
@@ -122,7 +122,7 @@ class ShaMixWithRejection : public PRNG {
     }
 
   private:
-    // 32bytes of uint256_t and 4 of uint64_t
+    // 32bytes of seed and 4 of counter
     checksum256 mix_bytes() {
         std::array<uint8_t, 36> arr;
         std::memcpy(arr.data(), &_s, sizeof(_s));
