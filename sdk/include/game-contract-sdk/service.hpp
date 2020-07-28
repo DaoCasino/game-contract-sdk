@@ -57,46 +57,6 @@ struct PRNG {
 };
 
 /**
-   Xoshiro256++ PRNG algo implementation
-   DO NOT USE IN PRODUCTION (not cryptographically secure)
-   details: http://prng.di.unimi.it/
-*/
-class Xoshiro : public PRNG {
-  public:
-    explicit Xoshiro(const checksum256& seed) : _s(split(seed)) {}
-    explicit Xoshiro(checksum256&& seed) : _s(split(std::move(seed))) {}
-    explicit Xoshiro(std::array<uint64_t, 4>&& seed) : _s(std::move(seed)) {}
-    explicit Xoshiro(const std::array<uint64_t, 4>& seed) : _s(seed) {}
-
-    uint64_t next(uint64_t from, uint64_t to) override {
-        eosio::check(to > from, "invalid random range");
-
-        const uint64_t result = roll_up(_s[0] + _s[3], 23) + _s[0];
-
-        const uint64_t t = _s[1] << 17;
-
-        _s[2] ^= _s[0];
-        _s[3] ^= _s[1];
-        _s[1] ^= _s[2];
-        _s[0] ^= _s[3];
-
-        _s[2] ^= t;
-
-        _s[3] = roll_up(_s[3], 45);
-
-        return result % (to - from) + from;
-    }
-
-  private:
-    static inline uint64_t roll_up(const uint64_t value, const int count) {
-        return (value << count) | (value >> (64 - count));
-    }
-
-  private:
-    std::array<uint64_t, 4> _s;
-};
-
-/**
    Implementation of generator based on sha256 mixing with rejection scheme
    details: https://github.com/DaoCasino/PRNG/blob/master/PRNG.pdf
 */
