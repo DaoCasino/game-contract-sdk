@@ -207,7 +207,7 @@ class game : public eosio::contract {
         }
 #endif
 
-        return std::make_shared<service::Xoshiro>(seed);
+        return std::make_shared<service::ShaMixWithRejection>(seed);
     }
 
   protected:

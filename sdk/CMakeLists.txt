@@ -15,6 +15,9 @@ target_include_directories(game-contract-sdk INTERFACE
     include/
 )
 
-target_link_libraries(game-contract-sdk INTERFACE platform-contracts)
+target_link_libraries(game-contract-sdk
+    INTERFACE intx::intx
+    INTERFACE platform-contracts
+)
 
 include(../cmake/utils.cmake)
