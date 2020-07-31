@@ -337,7 +337,7 @@ class game_tester : public TESTER {
     }
 
     void link_game(name player_name, name game_name) {
-        // allow player to game to 'game_name' game
+        // allow player to play 'game_name' game
         link_authority(player_name, game_name, N(game));
     }
 
