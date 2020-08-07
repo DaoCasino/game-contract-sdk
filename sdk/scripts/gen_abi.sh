@@ -2,7 +2,7 @@
 
 project_root="$(realpath $(dirname "${BASH_SOURCE[0]}")/../../)"
 
-run_in_docker="docker run --rm -v "$project_root":/build -w /build -ti daocasino/daobet-with-cdt:latest"
+run_in_docker="docker run --rm -v "$project_root":/build -w /build -ti daocasino/daobet-with-cdt.ubuntu:latest"
 output="sdk/files/game.abi"
 entry="examples/stub/contracts/src/stub.cpp"
 
