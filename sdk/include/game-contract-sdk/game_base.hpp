@@ -126,11 +126,11 @@ class game : public eosio::contract {
         uint64_t ses_seq;
         name player;
         uint8_t state;
-        game_params_type params; // <- game params, copied from casino contract aboid of params changing while active session
+        game_params_type params; // <- game params, copied from casino contract; avoid params changing during active session
         asset deposit;           // <- current player deposit amount, increments when new deposit received
         checksum256 digest;      // <- signidice result, set seed value on new_game
         time_point last_update;  // <-- last action time
-        asset last_max_win;      // <- last max win value, updates after on_action
+        asset last_max_win;      // <- last max win value, updated after on_action
 
         uint64_t primary_key() const { return ses_id; }
     };

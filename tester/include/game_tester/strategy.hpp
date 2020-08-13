@@ -65,7 +65,7 @@ class Executor {
         for (uint run = 0; run != run_count; ++run) {
             const auto session_id = session_create(tester, run);
 
-            if (!exectute_to_end(tester, _graph.root, session_id, limit_per_run)) {
+            if (!execute_to_end(tester, _graph.root, session_id, limit_per_run)) {
                 return run;
             }
 
@@ -81,7 +81,7 @@ class Executor {
 
   private:
     static bool
-    exectute_to_end(game_tester& tester, std::shared_ptr<Node> current, const session_id_t session_id, uint limit) {
+    execute_to_end(game_tester& tester, std::shared_ptr<Node> current, const session_id_t session_id, uint limit) {
 
         while (limit-- != 0) {
             switch (process_next_step(tester, session_id, current)) {
