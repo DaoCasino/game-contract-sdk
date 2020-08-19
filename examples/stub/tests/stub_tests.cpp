@@ -7,7 +7,8 @@ namespace testing {
 class stub_tester : public game_tester {
   public:
     static const name game_name;
-    static constexpr uint16_t stub_game_action_type{0u};
+    static constexpr uint16_t stub_game_action_type_to_random{0u};
+    static constexpr uint16_t stub_game_action_type_to_action{1u};
 
   public:
     stub_tester() {
@@ -418,6 +419,47 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, stub_tester) try {
                 ("sign", sign)
         ), wasm_assert_msg("state should be 'req_signidice_part_2'"));
     // clang-format on
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(transition_from_action_to_action_test, stub_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, STRSYM("10.0000"));
+    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
+
+    auto casino_balance_before = get_balance(casino_name);
+    auto player_balance_before = get_balance(player_name);
+
+    auto player_bet = STRSYM("5.0000");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+
+    BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
+
+    game_action(game_name, ses_id, stub_game_action_type_to_action, {0});
+
+    auto session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        2); // req_action state
+
+    game_action(game_name, ses_id, stub_game_action_type_to_random, {0});
+
+    session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(),
+                        3); // req_signidice_part1 state
+
+    signidice(game_name, ses_id);
+
+    auto casino_balance_after = get_balance(casino_name);
+    auto player_balance_after = get_balance(player_name);
+
+    session = get_game_session(game_name, ses_id);
+    BOOST_REQUIRE_EQUAL(session.is_null(), true);
+    BOOST_REQUIRE_EQUAL(player_balance_before - player_bet, player_balance_after);
+    BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
 }
 FC_LOG_AND_RETHROW()
 BOOST_AUTO_TEST_SUITE_END()
