@@ -216,8 +216,8 @@ class game : public eosio::contract {
         const auto& session = get_session(current_session);
 
         check_only_states(session,
-                          {state::req_start, state::req_signidice_part_2},
-                          "state should be 'req_start' or 'req_signidice_part_2'");
+                          {state::req_start, state::req_action, state::req_signidice_part_2},
+                          "state should be 'req_start', 'req_action' or 'req_signidice_part_2'");
 
         sessions.modify(session, get_self(), [&](auto& obj) {
             if (!need_deposit) {

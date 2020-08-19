@@ -10,7 +10,8 @@ using eosio::name;
 // simple stub game
 class [[eosio::contract]] stub : public game_sdk::game {
   public:
-    static constexpr uint16_t stub_game_action_type{0u};
+    static constexpr uint16_t stub_game_action_type_to_random{0u};
+    static constexpr uint16_t stub_game_action_type_to_action{1u};
 
   public:
     stub(name receiver, name code, eosio::datastream<const char*> ds) : game(receiver, code, ds) {}
