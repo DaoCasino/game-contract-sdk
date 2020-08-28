@@ -411,12 +411,14 @@ class game : public eosio::contract {
         on_action(ses_id, type, params);
     }
 
+    /*
+     NOTE: that action dosn't check authorization by require_auth, but checks RSA sign
+    */
     CONTRACT_ACTION(sgdicefirst)
     void signidice_part_1(uint64_t ses_id, const std::string& sign) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 
-        check_from_platform_signidice();
         check_not_expired(session);
         check_only_states(session, {state::req_signidice_part_1}, "state should be 'req_signidice_part_1'");
 
@@ -436,12 +438,14 @@ class game : public eosio::contract {
         emit_event(session, events::signidice_part_2_request{new_digest});
     }
 
+    /*
+     NOTE: that action dosn't check authorization by require_auth, but checks RSA sign
+    */
     CONTRACT_ACTION(sgdicesecond)
     void signidice_part_2(uint64_t ses_id, const std::string& sign) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
 
-        check_from_casino_signidice(session);
         check_not_expired(session);
         check_only_states(session, {state::req_signidice_part_2}, "state should be 'req_signidice_part_2'");
 
@@ -659,12 +663,6 @@ class game : public eosio::contract {
     }
 
     void check_from_platform_game() const { require_auth({get_platform(), platform_game_permission}); }
-
-    void check_from_casino_signidice(const session_row& ses) const {
-        require_auth({get_casino(ses.casino_id), casino_signidice_permission});
-    }
-
-    void check_from_platform_signidice() const { require_auth({get_platform(), platform_signidice_permission}); }
 
 #ifdef IS_DEBUG
   public:
