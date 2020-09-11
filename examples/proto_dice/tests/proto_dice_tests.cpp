@@ -371,7 +371,7 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicefirst),
-            {platform_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign_1)
@@ -416,7 +416,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
     BOOST_REQUIRE_EQUAL(
         push_action(game_name,
             N(sgdicefirst),
-            {platform_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign_1)
@@ -455,7 +455,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicefirst),
-            {platform_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign_1)
@@ -467,7 +467,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicefirst),
-            {platform_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign_1)
@@ -477,7 +477,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_1_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicefirst),
-            {platform_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign_1)
@@ -504,7 +504,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicesecond),
-            {casino_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign)
@@ -516,7 +516,7 @@ BOOST_FIXTURE_TEST_CASE(signidice_2_bad_state_test, proto_dice_tester) try {
         push_action(
             game_name,
             N(sgdicesecond),
-            {casino_name, N(signidice)},
+            {service_name, N(active)},
             mvo()
                 ("req_id", ses_id)
                 ("sign", sign)

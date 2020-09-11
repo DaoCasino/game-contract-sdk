@@ -75,6 +75,9 @@ enum struct events_id {
     game_message = 6
 };
 
+// just random account to sign actions that doesn't require auth(e.g signidice)
+static const eosio::chain::name service_name = N(service);
+
 class game_tester : public TESTER {
   public:
     constexpr static uint32_t game_session_ttl = 60 * 10;
@@ -85,7 +88,7 @@ class game_tester : public TESTER {
         produce_blocks(2);
         RAND_set_rand_method(random_mock::RAND_stdlib());
 
-        create_accounts({N(eosio.token), platform_name, events_name, casino_name});
+        create_accounts({N(eosio.token), platform_name, events_name, casino_name, service_name});
 
         produce_blocks(100);
         deploy_contract<contracts::system::token>(N(eosio.token));
@@ -117,10 +120,6 @@ class game_tester : public TESTER {
                     N(setrsacas),
                     platform_name,
                     mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
-
-        // create permissions for signidice
-        set_authority(platform_name, N(signidice), {get_public_key(platform_name, "signidice")}, N(active));
-        set_authority(casino_name, N(signidice), {get_public_key(casino_name, "signidice")}, N(active));
 
         set_authority(platform_name, N(gameaction), {get_public_key(platform_name, "gameaction")}, N(active));
 
@@ -229,6 +228,7 @@ class game_tester : public TESTER {
         act.account = contract;
         act.name = name;
         act.data = abi_ser[contract].variant_to_binary(action_type_name, data, abi_serializer_max_time);
+
         act.authorization.push_back(auth);
 
         signed_transaction trx;
@@ -315,16 +315,10 @@ class game_tester : public TESTER {
 
         push_action(casino_name, N(addgame), casino_name, mvo()("game_id", game_id)("params", params));
 
-        // allow platform to make signidice action in this game
-        link_authority(platform_name, game_name, N(signidice), N(sgdicefirst));
-
         // allow platform to make newgame action in this game
         link_authority(platform_name, game_name, N(gameaction), N(newgame));
         link_authority(platform_name, game_name, N(gameaction), N(gameaction));
         link_authority(platform_name, game_name, N(gameaction), N(close));
-
-        // allow casino to make signidice action in this game
-        link_authority(casino_name, game_name, N(signidice), N(sgdicesecond));
 
         return game_id;
     }
@@ -423,7 +417,7 @@ class game_tester : public TESTER {
             push_action(
                 game_name,
                 N(sgdicefirst),
-                {platform_name, N(signidice)},
+                {service_name, N(active)}, //{platform_name, N(signidice)},
                 mvo()
                     ("req_id", ses_id)
                     ("sign", sign_1)
@@ -440,7 +434,7 @@ class game_tester : public TESTER {
             push_action(
                 game_name,
                 N(sgdicesecond),
-                {casino_name, N(signidice)},
+                {service_name, N(active)}, //{platform_name, N(signidice)},
                 mvo()
                     ("req_id", ses_id)
                     ("sign", sign_2)
