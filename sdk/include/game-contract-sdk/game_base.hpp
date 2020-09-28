@@ -356,39 +356,12 @@ class game : public eosio::contract {
     /* contract actions */
     CONTRACT_ACTION(newgame)
     void new_game(uint64_t ses_id, uint64_t casino_id) {
-        set_current_session(ses_id);
-        const auto& session = get_session(ses_id);
+        new_game_internal(ses_id, casino_id);
+    }
 
-        /* whitelist checks */
-        check_active_game();
-        check_active_casino(casino_id);
-        check_active_game_in_casino(casino_id);
-
-        /* auth & state checks */
-        check_from_platform_game();
-        check_not_expired(session);
-        check_only_states(session, {state::req_start}, "state should be 'req_start'");
-
-        const auto game_params = fetch_game_params(casino_id);
-        const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
-
-        // always be careful with ref after modify
-        // ref will still life but refer to object without new updates
-        sessions.modify(session, get_self(), [&](auto& obj) {
-            obj.last_update = eosio::current_time_point();
-            obj.casino_id = casino_id;
-            obj.digest = init_digest;
-            obj.params = game_params;
-        });
-
-        // update session ref (invalidates after modify)
-        const auto& updated_session = get_session(ses_id);
-
-        notify_new_session(updated_session);
-
-        emit_event(updated_session, events::game_started{});
-
-        on_new_game(ses_id);
+    CONTRACT_ACTION(newgameaffl)
+    void new_game_affl(uint64_t ses_id, uint64_t casino_id, std::string& affiliate_id) {
+        new_game_internal(ses_id, casino_id);
     }
 
     CONTRACT_ACTION(gameaction)
@@ -533,6 +506,43 @@ class game : public eosio::contract {
         global.session_ttl = session_ttl;
 
         on_init();
+    }
+
+  private:
+    void new_game_internal(uint64_t ses_id, uint64_t casino_id) {
+        set_current_session(ses_id);
+        const auto& session = get_session(ses_id);
+
+        /* whitelist checks */
+        check_active_game();
+        check_active_casino(casino_id);
+        check_active_game_in_casino(casino_id);
+
+        /* auth & state checks */
+        check_from_platform_game();
+        check_not_expired(session);
+        check_only_states(session, {state::req_start}, "state should be 'req_start'");
+
+        const auto game_params = fetch_game_params(casino_id);
+        const auto init_digest = calc_seed(casino_id, session.ses_seq, session.player);
+
+        // always be careful with ref after modify
+        // ref will still life but refer to object without new updates
+        sessions.modify(session, get_self(), [&](auto& obj) {
+            obj.last_update = eosio::current_time_point();
+            obj.casino_id = casino_id;
+            obj.digest = init_digest;
+            obj.params = game_params;
+        });
+
+        // update session ref (invalidates after modify)
+        const auto& updated_session = get_session(ses_id);
+
+        notify_new_session(updated_session);
+
+        emit_event(updated_session, events::game_started{});
+
+        on_new_game(ses_id);
     }
 
   private:
