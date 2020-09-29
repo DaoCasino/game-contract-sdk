@@ -77,6 +77,9 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
             case "newgame"_n.value:                                                                                    \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game);             \
                 break;                                                                                                 \
+            case "newgameaffl"_n.value:                                                                                \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game_affl);        \
+                break;                                                                                                 \
             case "gameaction"_n.value:                                                                                 \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action);          \
                 break;                                                                                                 \
