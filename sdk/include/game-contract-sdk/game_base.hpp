@@ -203,7 +203,7 @@ class game : public eosio::contract {
         if (!get_debug().pseudo_prng.empty()) {
             const auto pseudo_prng = get_debug().pseudo_prng;
             global_debug.pseudo_prng.clear();
-            return std::make_shared<service::PseudoPRNG>(pseudo_prng);
+            return std::make_shared<service::PseudoPRNG>(pseudo_prng); 
         }
 #endif
 
@@ -360,7 +360,7 @@ class game : public eosio::contract {
     }
 
     CONTRACT_ACTION(newgameaffl)
-    void new_game_affl(uint64_t ses_id, uint64_t casino_id, std::string& affiliate_id) {
+    void new_game_affl(uint64_t ses_id, uint64_t casino_id, const std::string& affiliate_id) {
         new_game_internal(ses_id, casino_id);
     }
 
