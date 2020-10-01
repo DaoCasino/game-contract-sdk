@@ -462,6 +462,36 @@ BOOST_FIXTURE_TEST_CASE(transition_from_action_to_action_test, stub_tester) try 
     BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
 }
 FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(new_session_affl_test, stub_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, STRSYM("10.0000"));
+    transfer(N(eosio), casino_name, STRSYM("1000.0000"));
+
+    auto ses_id = 0u;
+    auto player_bet = STRSYM("5.0000");
+    transfer(player_name, game_name, player_bet, std::to_string(ses_id));
+
+    auto affiliate_id = "affiliate";
+
+    // clang-format off
+    BOOST_REQUIRE_EQUAL(
+        push_action(
+            game_name,
+            N(newgameaffl),
+            {platform_name, N(gameaction)},
+            mvo()
+                ("req_id", ses_id)
+                ("casino_id", casino_id)
+                ("affiliate_id", affiliate_id)
+        ), success());
+}
+FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace testing

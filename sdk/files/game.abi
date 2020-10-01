@@ -85,6 +85,24 @@
             ]
         },
         {
+            "name": "new_game_affl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "affiliate_id",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "pair_uint16_uint64",
             "base": "",
             "fields": [
@@ -198,6 +216,11 @@
         {
             "name": "newgame",
             "type": "new_game",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newgameaffl",
+            "type": "new_game_affl",
             "ricardian_contract": ""
         },
         {
