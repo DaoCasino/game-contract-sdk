@@ -80,6 +80,9 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
             case "newgameaffl"_n.value:                                                                                \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game_affl);        \
                 break;                                                                                                 \
+            case "newgamebon"_n.value:                                                                                 \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game_bonus);       \
+                break;                                                                                                 \
             case "gameaction"_n.value:                                                                                 \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action);          \
                 break;                                                                                                 \
@@ -91,6 +94,9 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
                 break;                                                                                                 \
             case "close"_n.value:                                                                                      \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close);                \
+                break;                                                                                                 \
+            case "depositbon"_n.value:                                                                                 \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::on_bonus_deposit);     \
                 break;                                                                                                 \
             GAME_DISPATCH_HELPER(TYPE, MEMBERS)                                                                        \
             EXTRA_CHECK(TYPE)                                                                                          \
