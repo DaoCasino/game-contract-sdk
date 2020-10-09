@@ -265,38 +265,36 @@ class game : public eosio::contract {
 
         const auto casino_name = get_casino(session.casino_id);
 
-        asset real_player_deposit = session.deposit - session.bonus_deposit;
-        asset real_player_win = calc_real_asset(player_win, session.deposit, session.bonus_deposit);
-        asset bonus_player_win = player_win - real_player_win;
-        asset real_player_payout = calc_real_asset(player_payout, session.deposit, session.bonus_deposit);
-        asset bonus_player_payout = player_payout - real_player_payout;
+        asset player_real_deposit = session.deposit - session.bonus_deposit;
+        asset player_real_win = calc_real_asset(player_win, session.deposit, session.bonus_deposit);
+        asset player_bonus_win = player_win - player_real_win;
+        asset player_real_payout = calc_real_asset(player_payout, session.deposit, session.bonus_deposit);
+        asset player_bonus_payout = player_payout - player_real_payout;
 
         /* real payout more than real deposit */
-        if (real_player_win.amount > 0) {
+        if (player_real_win.amount > 0) {
             // request player win from casino
-            transfer_from_casino(casino_name, session.player, real_player_win);
+            transfer_from_casino(casino_name, session.player, player_real_win);
             // transfer back deposit
-            transfer(session.player, real_deposit, "player win[game]");
+            transfer(session.player, player_real_deposit, "player win[game]");
         } else {
             /* player payout more than 0 */
-            if (real_player_payout.amount > 0)
-                transfer(session.player, real_player_deposit, "player win[game]");
+            if (player_real_payout.amount > 0)
+                transfer(session.player, player_real_deposit, "player win[game]");
 
             /* all remain funds transfers to casino */
-            auto to_casino = real_player_deposit - real_player_payout;
+            auto to_casino = player_real_deposit - player_real_payout;
             if (to_casino.amount > 0)
                 transfer(casino_name, to_casino, "casino win");
         }
 
         // bonus payout more than bonus deposit
-        if (bonus_player_win.amount > 0) {
+        if (player_bonus_win.amount + session.bonus_deposit.amount > 0) {
             // transfer win + deposit bonus to player
-            transfer_bonus_to_player(casino_name, session.player, bonus_player_win + session.bonus_deposit);
-        } else {
+            transfer_bonus_to_player(casino_name, session.player, player_bonus_win + session.bonus_deposit);
+        } else if (player_bonus_payout.amount > 0) {
             // bonus payout more than 0
-            if (bonus_player_payout.amount > 0) {
-                transfer_bonus_to_player(casino_name, session.player, bonus_player_payout);
-            }
+            transfer_bonus_to_player(casino_name, session.player, player_bonus_payout);
             // no need to send bonus to casino
         }
 
@@ -308,9 +306,9 @@ class game : public eosio::contract {
         notify_close_session(session);
 
         if (msg.has_value())
-            emit_event(session, events::game_finished{real_player_win, eosio::pack(msg.value())});
+            emit_event(session, events::game_finished{player_real_win, eosio::pack(msg.value())});
         else
-            emit_event(session, events::game_finished{real_player_win});
+            emit_event(session, events::game_finished{player_real_win});
 
         sessions.erase(session);
 
@@ -509,15 +507,25 @@ class game : public eosio::contract {
         eosio::check(is_expired(session), "session isn't expired, only expired session can be closed");
 
         asset player_win = zero_asset;
+        asset real_deposit = session.deposit - session.bonus_deposit;
+        asset real_last_max_win = calc_real_asset(session.last_max_win, session.deposit, session.bonus_deposit);
+        asset bonus_last_max_win = session.last_max_win - real_last_max_win;
 
         switch (static_cast<state>(session.state)) {
         /* if casino doesn't provide signidice we assume that casino lost */
         case state::req_signidice_part_2:
+            
             // transfer deposit to player
-            transfer(session.player, session.deposit, "player win [session expired]");
+            if (real_deposit.amount > 0)
+                transfer(session.player, real_deposit, "player win [session expired]");
+            if (session.bonus_deposit.amount > 0)
+                transfer_bonus_to_player(get_casino(session.casino_id), session.player, session.bonus_deposit);
             // request last reported max_win amount funds for player
-            transfer_from_casino(get_casino(session.casino_id), session.player, session.last_max_win);
-            player_win = session.last_max_win;
+            if (real_last_max_win.amount > 0)
+                transfer_from_casino(get_casino(session.casino_id), session.player, real_last_max_win);
+            if (bonus_last_max_win.amount > 0)
+                transfer_bonus_to_player(get_casino(session.casino_id), session.player, bonus_last_max_win);
+            player_win = real_last_max_win;
             break;
 
         /* if player doesn't start game just refund deposit (here we haven't info about casino) */
@@ -525,13 +533,18 @@ class game : public eosio::contract {
         /* if platform doesn't provide signidice we refund deposit to player */
         case state::req_signidice_part_1:
             // transfer deposit to player
-            transfer(session.player, session.deposit, "refund [session expired]");
+            if (real_deposit.amount > 0)
+                transfer(session.player, real_deposit, "refund [session expired]");
+            if (session.bonus_deposit.amount > 0)
+                transfer_bonus_to_player(get_casino(session.casino_id), session.player, session.bonus_deposit);
             break;
 
         /* in other cases we assume that player lost */
         default:
-            transfer(get_casino(session.casino_id), session.deposit, "player lost");
-            player_win -= session.deposit;
+            if (real_deposit.amount > 0)
+            transfer(get_casino(session.casino_id), real_deposit, "player lost");
+            // no need to transfer bonus to casino
+            player_win -= real_deposit;
         }
 
         // if session isn't started we have no info about casino and no need to perform any action
@@ -563,10 +576,12 @@ class game : public eosio::contract {
     }
 
     CONTRACT_ACTION(depositbon)
-    void on_bonus_deposit(name player, asset quantity, uint64_t ses_id) {
-        const auto ses_id = get_ses_id(memo);
+    void deposit_bonus(name player, asset quantity, uint64_t ses_id, uint64_t casino_id) {
+        const auto casino = get_casino(casino_id);
 
         eosio::check(quantity.symbol == core_symbol, "invalid token symbol");
+
+        deposit_bonus(casino, player, quantity);
 
         // if session doesn't exists create new session
         if (sessions.find(ses_id) == sessions.end()) {
@@ -697,12 +712,12 @@ class game : public eosio::contract {
             .send();
     }
 
-    void transfer_bonus_to_casino(name casino, name player, asset amount) const {
+    void transfer_bonus_to_player(name casino, name player, asset amount) const {
         eosio::action({get_self(), "active"_n}, casino, "sesaddbon"_n, std::make_tuple(get_self(), player, amount))
         .send();
     }
 
-    void transfer_bonus_to_player(name casino, name player, asset amount) const {
+    void deposit_bonus(name casino, name player, asset amount) const {
         eosio::action({get_self(), "active"_n}, casino, "seslockbon"_n, std::make_tuple(get_self(), player, amount))
         .send();
     }
@@ -747,9 +762,10 @@ class game : public eosio::contract {
   private:
     asset calc_real_asset(asset to_calc, asset total_deposit, asset bonus_deposit) {
         asset real_deposit = total_deposit - bonus_deposit;
-        // TODO
-        asset real_asset;
-        return real_asset;
+        double percentage = real_deposit.amount * 1.0 / total_deposit.amount;
+		uint64_t amount = to_calc.amount * percentage;
+        asset real_part = asset(amount, core_symbol);
+        return real_part;
     }
 
   private:

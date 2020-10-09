@@ -318,8 +318,10 @@ class game_tester : public TESTER {
         // allow platform to make newgame action in this game
         link_authority(platform_name, game_name, N(gameaction), N(newgame));
         link_authority(platform_name, game_name, N(gameaction), N(newgameaffl));
+        link_authority(platform_name, game_name, N(gameaction), N(newgamebon));
         link_authority(platform_name, game_name, N(gameaction), N(gameaction));
         link_authority(platform_name, game_name, N(gameaction), N(close));
+        link_authority(platform_name, game_name, N(gameaction), N(depositbon));
 
         return game_id;
     }

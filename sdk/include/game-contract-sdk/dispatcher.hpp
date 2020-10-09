@@ -96,7 +96,7 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::close);                \
                 break;                                                                                                 \
             case "depositbon"_n.value:                                                                                 \
-                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::on_bonus_deposit);     \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::deposit_bonus);        \
                 break;                                                                                                 \
             GAME_DISPATCH_HELPER(TYPE, MEMBERS)                                                                        \
             EXTRA_CHECK(TYPE)                                                                                          \
