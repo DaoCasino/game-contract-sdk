@@ -203,7 +203,7 @@ class game : public eosio::contract {
         if (!get_debug().pseudo_prng.empty()) {
             const auto pseudo_prng = get_debug().pseudo_prng;
             global_debug.pseudo_prng.clear();
-            return std::make_shared<service::PseudoPRNG>(pseudo_prng); 
+            return std::make_shared<service::PseudoPRNG>(pseudo_prng);
         }
 #endif
 
@@ -325,11 +325,13 @@ class game : public eosio::contract {
 
         eosio::check(quantity.symbol == core_symbol, "invalid token symbol");
 
+        session_row session;
+
         // if session doesn't exists create new session
         if (sessions.find(ses_id) == sessions.end()) {
             check_active_game();
 
-            sessions.emplace(get_self(), [&](auto& row) {
+            session = *sessions.emplace(get_self(), [&](auto& row) {
                 row.ses_id = ses_id;
                 row.ses_seq = global.session_seq++;
                 row.player = from;
@@ -339,7 +341,7 @@ class game : public eosio::contract {
                 row.state = static_cast<uint8_t>(state::req_start);
             });
         } else { /* else add extra deposit */
-            const auto& session = get_session(ses_id);
+            session = get_session(ses_id);
 
             check_not_expired(session);
             check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
@@ -351,6 +353,7 @@ class game : public eosio::contract {
                 row.state = static_cast<uint8_t>(state::req_action);
             });
         }
+        notify_new_deposit(session, quantity);
     }
 
     /* contract actions */
@@ -609,7 +612,8 @@ class game : public eosio::contract {
             get_casino(ses.casino_id),
             "newsession"_n,
             std::make_tuple(
-                get_self()
+                get_self(),
+                ses.player
             )
         ).send();
     }
@@ -634,6 +638,18 @@ class game : public eosio::contract {
             std::make_tuple(
                 get_self(),
                 ses.last_max_win
+            )
+        ).send();
+    }
+
+    void notify_new_deposit(const session_row& ses, asset quantity) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "sesnewdepo"_n,
+            std::make_tuple(
+                get_self(),
+                quantity
             )
         ).send();
     }
