@@ -326,9 +326,10 @@ class game : public eosio::contract {
         eosio::check(quantity.symbol == core_symbol, "invalid token symbol");
 
         session_row session;
+        const auto& session_itr = sessions.find(ses_id);
 
         // if session doesn't exists create new session
-        if (sessions.find(ses_id) == sessions.end()) {
+        if (session_itr == sessions.end()) {
             check_active_game();
 
             session = *sessions.emplace(get_self(), [&](auto& row) {
@@ -347,7 +348,7 @@ class game : public eosio::contract {
             check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
             eosio::check(session.player == from, "only player can deposit");
 
-            sessions.modify(session, get_self(), [&](auto& row) {
+            sessions.modify(session_itr, get_self(), [&](auto& row) {
                 row.deposit += quantity;
                 row.last_update = eosio::current_time_point();
                 row.state = static_cast<uint8_t>(state::req_action);
