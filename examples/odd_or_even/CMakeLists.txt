@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(guess_number_example)
+project(odd_or_even_example)
 
 include(ExternalProject)
 
@@ -11,9 +11,9 @@ option(IS_DEBUG "Is Debug" OFF)
 
 set(GAME_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../) # Path to game SDK project root
 
-message(STATUS "Building guess_number example contract")
+message(STATUS "Building odd_or_even example contract")
 ExternalProject_Add(
-    guess_number_contract
+    odd_or_even_contract
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/contracts
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/contracts
     CMAKE_ARGS
@@ -29,9 +29,9 @@ ExternalProject_Add(
 string(REPLACE ";" "|" TEST_FRAMEWORK_PATH "${CMAKE_FRAMEWORK_PATH}")
 string(REPLACE ";" "|" TEST_MODULE_PATH "${CMAKE_MODULE_PATH}")
 
-message(STATUS "Building guess_number example unit tests")
+message(STATUS "Building odd_or_even example unit tests")
 ExternalProject_Add(
-    guess_number_unit_tests
+    odd_or_even_unit_tests
     LIST_SEPARATOR | # Use the alternate list separator
     CMAKE_ARGS
         -DBOOST_ROOT=${BOOST_ROOT}
@@ -50,5 +50,5 @@ ExternalProject_Add(
     TEST_COMMAND   ""
     INSTALL_COMMAND ""
 )
-add_dependencies(guess_number_unit_tests guess_number_contract)
+add_dependencies(odd_or_even_unit_tests odd_or_even_contract)
 

@@ -2,7 +2,7 @@
 
 #include <game-contract-sdk/game_base.hpp>
 
-namespace guess_number {
+namespace odd_or_even {
 
 using eosio::checksum256;
 using eosio::name;
@@ -13,7 +13,7 @@ namespace action {
     const uint16_t take = 1;
 }
 
-class [[eosio::contract]] guess_number : public game_sdk::game {
+class [[eosio::contract]] odd_or_even : public game_sdk::game {
 public:
     static const int MAX_NUM_ROUNDS = 3;
 
@@ -27,7 +27,7 @@ public:
 
     using state_table = eosio::multi_index<"state"_n, state_row>;
 
-    guess_number(name receiver, name code, eosio::datastream<const char*> ds)
+    odd_or_even(name receiver, name code, eosio::datastream<const char*> ds)
         : game(receiver, code, ds),
           state(_self, _self.value) {}
 
@@ -42,4 +42,4 @@ private:
     state_table state;
 };
 
-} // namespace guess_number
+} // namespace odd_or_even

@@ -4,7 +4,7 @@
 
 namespace testing {
 
-class guess_number_tester : public game_tester {
+class odd_or_even_tester : public game_tester {
 public:
     static const name game_name;
     static const name player_name;
@@ -13,9 +13,9 @@ public:
     static const sha256 odd_number;
     static const sha256 even_number;
 public:
-    guess_number_tester() {
+    odd_or_even_tester() {
         create_account(game_name);
-        deploy_game<guess_number_game>(game_name, {});
+        deploy_game<odd_or_even_game>(game_name, {});
 
         create_player(player_name);
         link_game(player_name, game_name);
@@ -55,34 +55,34 @@ public:
     }
 };
 
-const name guess_number_tester::game_name = N(game);
-const name guess_number_tester::player_name = N(player);
-const asset guess_number_tester::zero_asset = STRSYM("0.0000");
-const asset guess_number_tester::starting_balance = STRSYM("100.0000");
-const sha256 guess_number_tester::odd_number = sha256("0000000000000000000000000000000000000000000000000000000000000001");
-const sha256 guess_number_tester::even_number = sha256("0000000000000000000000000000000000000000000000000000000000000002");
+const name odd_or_even_tester::game_name = N(game);
+const name odd_or_even_tester::player_name = N(player);
+const asset odd_or_even_tester::zero_asset = STRSYM("0.0000");
+const asset odd_or_even_tester::starting_balance = STRSYM("100.0000");
+const sha256 odd_or_even_tester::odd_number = sha256("0000000000000000000000000000000000000000000000000000000000000001");
+const sha256 odd_or_even_tester::even_number = sha256("0000000000000000000000000000000000000000000000000000000000000002");
 
-BOOST_AUTO_TEST_SUITE(guess_number_tests)
+BOOST_AUTO_TEST_SUITE(odd_or_even_tests)
 
 #ifdef IS_DEBUG
 
 // ============ ZERO ROUNDS
 
-BOOST_FIXTURE_TEST_CASE(take_no_bet_real, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(take_no_bet_real, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("10.0000"));
     take(ses_id);
     check_player_win();
 }
 
-BOOST_FIXTURE_TEST_CASE(take_no_bet_bonus, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(take_no_bet_bonus, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, zero_asset, STRSYM("10.0000"));
     take(ses_id);
     check_player_win();
 }
 
-BOOST_FIXTURE_TEST_CASE(take_no_bet_mixed, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(take_no_bet_mixed, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("10.0000"), STRSYM("10.0000"));
     take(ses_id);
@@ -91,7 +91,7 @@ BOOST_FIXTURE_TEST_CASE(take_no_bet_mixed, guess_number_tester)
 
 // ================= SINGLE ROUND
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_real, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_real, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("10.0000"));
     roll(ses_id, odd_number);
@@ -99,7 +99,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_real, guess_number_tester)
     check_player_win(STRSYM("5.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_bonus, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_bonus, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, zero_asset, STRSYM("10.0000"));
     roll(ses_id, odd_number);
@@ -107,7 +107,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_bonus, guess_number_tester)
     check_player_win(zero_asset, STRSYM("5.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("8.0000"), STRSYM("2.0000"));
     roll(ses_id, odd_number);
@@ -115,7 +115,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed, guess_number_tester)
     check_player_win(STRSYM("4.0000"), STRSYM("1.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("2.0000"), STRSYM("8.0000"));
     roll(ses_id, odd_number);
@@ -123,7 +123,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus, guess_number_t
     check_player_win(STRSYM("1.0000"), STRSYM("4.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_fractional, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_fractional, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("9.0000"), STRSYM("1.0000"));
     roll(ses_id, odd_number);
@@ -131,7 +131,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_fractional, guess_number_tes
     check_player_win(STRSYM("4.5000"), STRSYM("0.5000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus_fractional, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus_fractional, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("1.0000"), STRSYM("9.0000"));
     roll(ses_id, odd_number);
@@ -140,21 +140,21 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_one_round_mixed_larger_bonus_fractional, gue
 }
 
 
-BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_real, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_real, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("10.0000"));
     roll(ses_id, even_number);
     check_player_win(-STRSYM("5.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_bonus, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_bonus, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, zero_asset, STRSYM("10.0000"));
     roll(ses_id, even_number);
     check_player_win(zero_asset, -STRSYM("5.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_mixed, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_mixed, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
     roll(ses_id, even_number);
@@ -163,7 +163,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_lose_one_round_mixed, guess_number_tester)
 
 // ============= TWO ROUNDS
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_real, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_real, odd_or_even_tester)
 {
     const asset ante = STRSYM("10.0000");
     const auto ses_id = new_game_session(game_name, player_name, casino_id, ante);
@@ -173,7 +173,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_real, guess_number_tester)
     check_player_win(STRSYM("10.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_bonus, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_bonus, odd_or_even_tester)
 {
     const asset ante = STRSYM("10.0000");
     const auto ses_id = new_game_session(game_name, player_name, casino_id, zero_asset, ante);
@@ -183,7 +183,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_bonus, guess_number_tester)
     check_player_win(zero_asset, STRSYM("10.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_mixed, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_mixed, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
     roll(ses_id, odd_number);
@@ -192,7 +192,7 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_mixed, guess_number_tester)
     check_player_win(STRSYM("10.0000"), STRSYM("5.0000"));
 }
 
-BOOST_FIXTURE_TEST_CASE(bet_and_lose_two_rounds_mixed, guess_number_tester)
+BOOST_FIXTURE_TEST_CASE(bet_and_lose_two_rounds_mixed, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
     roll(ses_id, odd_number);
