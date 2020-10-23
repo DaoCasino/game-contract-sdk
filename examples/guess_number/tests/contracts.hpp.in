@@ -1,0 +1,7 @@
+#pragma once
+#include <eosio/testing/tester.hpp>
+
+struct guess_number_game {
+    static std::vector<uint8_t> wasm() { return read_wasm("${CMAKE_BINARY_DIR}/../contracts/guess_number.wasm"); }
+    static std::vector<char>    abi() { return read_abi("${CMAKE_BINARY_DIR}/../contracts/guess_number.abi"); }
+};

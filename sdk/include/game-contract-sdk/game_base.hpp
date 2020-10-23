@@ -127,7 +127,9 @@ class game : public eosio::contract {
         name player;
         uint8_t state;
         game_params_type params; // <- game params, copied from casino contract; avoid params changing during active session
-        asset deposit;           // <- current player deposit amount, increments when new deposit received
+        asset deposit;           // <- player's total deposit = real tokens + bonus, increases on
+                                 //    transfer, newgamebon and depositbon actions
+        asset bonus_deposit;     // <- player's bonus deposit
         checksum256 digest;      // <- signidice result, set seed value on new_game
         time_point last_update;  // <-- last action time
         asset last_max_win;      // <- last max win value, updated after on_action
@@ -262,22 +264,31 @@ class game : public eosio::contract {
         eosio::check(player_win <= session.last_max_win, "player win should be less than 'last_max_win'");
 
         const auto casino_name = get_casino(session.casino_id);
-
+        eosio::print_f("bonus_deposit=%s\n", session.bonus_deposit);
         /* payout more than deposit */
-        if (player_win.amount > 0) {
+        if (player_win > zero_asset) {
             // request player win from casino
-            transfer_from_casino(casino_name, session.player, player_win);
-            // transfer back deposit
-            transfer(session.player, session.deposit, "player win[game]");
-        } else {
-            /* player payout more than 0 */
-            if (player_payout.amount > 0)
-                transfer(session.player, player_payout, "player win[game]");
+            const auto bonus_win = player_win * session.bonus_deposit.amount / session.deposit.amount;
+            const auto real_win = player_win - bonus_win;
+            eosio::print_f("real_win=%s bonus_win=%s\n", real_win, bonus_win);
+            // transfer win
+            transfer_from_casino(casino_name, session.player, real_win);
+            transfer_bonus_from_casino(casino_name, session.player, session.bonus_deposit + bonus_win);
 
-            /* all remain funds transfers to casino */
-            auto to_casino = session.deposit - player_payout;
-            if (to_casino.amount > 0)
-                transfer(casino_name, to_casino, "casino win");
+            // transfer back real deposit
+            transfer(session.player, session.deposit - session.bonus_deposit, "player win[game]");
+        } else {
+            const auto bonus_payout = player_payout * session.bonus_deposit.amount / session.deposit.amount;
+            const auto real_payout = player_payout - bonus_payout;
+            eosio::print_f("real_payout=%s bonus_payout=%s\n", real_payout, bonus_payout);
+
+            transfer(session.player, real_payout, "player win[game]");
+            transfer_bonus_from_casino(casino_name, session.player, bonus_payout);
+
+            /* only transfer real win, bonuses are 'burned' */
+            const auto real_deposit = session.deposit - session.bonus_deposit;
+            const auto casino_real_win = real_deposit - real_payout;
+            transfer(casino_name, casino_real_win, "casino win");
         }
 
         sessions.modify(session, get_self(), [&](auto& obj) {
@@ -321,39 +332,17 @@ class game : public eosio::contract {
             return;
         }
 
-        const auto ses_id = get_ses_id(memo);
-
         eosio::check(quantity.symbol == core_symbol, "invalid token symbol");
 
-        session_row session;
+        const auto ses_id = get_ses_id(memo);
 
-        // if session doesn't exists create new session
         if (sessions.find(ses_id) == sessions.end()) {
             check_active_game();
-
-            session = *sessions.emplace(get_self(), [&](auto& row) {
-                row.ses_id = ses_id;
-                row.ses_seq = global.session_seq++;
-                row.player = from;
-                row.deposit = quantity;
-                row.last_update = eosio::current_time_point();
-                row.last_max_win = zero_asset;
-                row.state = static_cast<uint8_t>(state::req_start);
-            });
-        } else { /* else add extra deposit */
-            session = get_session(ses_id);
-
-            check_not_expired(session);
-            check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
-            eosio::check(session.player == from, "only player can deposit");
-
-            sessions.modify(session, get_self(), [&](auto& row) {
-                row.deposit += quantity;
-                row.last_update = eosio::current_time_point();
-                row.state = static_cast<uint8_t>(state::req_action);
-            });
+            create_session(ses_id, from, quantity);
+        } else {
+            handle_extra_deposit(get_session(ses_id), from, quantity);
         }
-        notify_new_deposit(session, quantity);
+        notify_new_deposit(get_session(ses_id), quantity);
     }
 
     /* contract actions */
@@ -365,6 +354,33 @@ class game : public eosio::contract {
     CONTRACT_ACTION(newgameaffl)
     void new_game_affl(uint64_t ses_id, uint64_t casino_id, const std::string& affiliate_id) {
         new_game_internal(ses_id, casino_id);
+    }
+
+    CONTRACT_ACTION(newgamebon)
+    void new_game_bonus(uint64_t ses_id, uint64_t casino_id, name from, asset quantity) {
+        // session might have been created if we transfered first
+        const auto& session = get_or_create_session(ses_id, from, zero_asset);
+        sessions.modify(session, get_self(), [&](auto& row) {
+            row.deposit += quantity;
+            row.bonus_deposit = quantity;
+        });
+        notify_new_bonus_deposit(session, quantity);
+
+        // auth check & remaining logic
+        new_game_internal(ses_id, casino_id);
+    }
+
+    CONTRACT_ACTION(depositbon)
+    void deposit_bonus(uint64_t ses_id, name from, asset quantity) {
+        require_auth(from);
+        const auto& session = get_session(ses_id);
+        handle_extra_deposit(session, from, quantity);
+        // deposit was already updated so we only need to update bonus deposit
+        sessions.modify(session, get_self(), [&](auto& row) {
+            row.bonus_deposit += quantity;
+        });
+
+        notify_new_bonus_deposit(session, quantity);
     }
 
     CONTRACT_ACTION(gameaction)
@@ -512,6 +528,38 @@ class game : public eosio::contract {
     }
 
   private:
+    const session_row& create_session(uint64_t ses_id, name player, asset deposit) {
+        return *sessions.emplace(get_self(), [&](auto& row) {
+            row.ses_id = ses_id;
+            row.ses_seq = global.session_seq++;
+            row.player = player;
+            row.deposit = deposit;
+            row.bonus_deposit = zero_asset;
+            row.last_update = eosio::current_time_point();
+            row.last_max_win = zero_asset;
+            row.state = static_cast<uint8_t>(state::req_start);
+        });
+    }
+
+    const session_row& get_or_create_session(uint64_t ses_id, name player, asset deposit) {
+        if (sessions.find(ses_id) == sessions.end()) {
+            return create_session(ses_id, player, deposit);
+        }
+        return get_session(ses_id);
+    }
+
+    void handle_extra_deposit(const session_row& session, name from, asset quantity) {
+        check_not_expired(session);
+        check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
+        eosio::check(session.player == from, "only player can deposit");
+
+        sessions.modify(session, get_self(), [&](auto& row) {
+            row.deposit += quantity;
+            row.last_update = eosio::current_time_point();
+            row.state = static_cast<uint8_t>(state::req_action);
+        });
+    }
+
     void new_game_internal(uint64_t ses_id, uint64_t casino_id) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
@@ -597,13 +645,26 @@ class game : public eosio::contract {
     }
 
     void transfer_from_casino(name casino, name to, asset amount) const {
+        if (amount == zero_asset) {
+            return;
+        }
         eosio::action({get_self(), "active"_n}, casino, "onloss"_n, std::make_tuple(get_self(), to, amount)).send();
     }
 
     void transfer(name to, asset amount, const std::string& memo = "") const {
+        if (amount == zero_asset) {
+            return;
+        }
         eosio::action(
             {get_self(), "active"_n}, "eosio.token"_n, "transfer"_n, std::make_tuple(get_self(), to, amount, memo))
             .send();
+    }
+
+    void transfer_bonus_from_casino(name casino, name to, asset amount) const {
+        if (amount == zero_asset) {
+            return;
+        }
+        eosio::action({get_self(), "active"_n}, casino, "sesaddbon"_n, std::make_tuple(get_self(), to, amount)).send();
     }
 
     void notify_new_session(const session_row& ses) const {
@@ -647,6 +708,19 @@ class game : public eosio::contract {
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
             "newdeposit"_n,
+            std::make_tuple(
+                get_self(),
+                ses.player,
+                quantity
+            )
+        ).send();
+    }
+
+    void notify_new_bonus_deposit(const session_row& ses, asset quantity) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "seslockbon"_n,
             std::make_tuple(
                 get_self(),
                 ses.player,
