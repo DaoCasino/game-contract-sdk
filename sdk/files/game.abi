@@ -125,6 +125,32 @@
             ]
         },
         {
+            "name": "new_game_bonus_affl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "affiliate_id",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "deposit_bonus",
             "base": "",
             "fields": [
@@ -270,6 +296,11 @@
         {
             "name": "newgamebon",
             "type": "new_game_bonus",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newgamebonaf",
+            "type": "new_game_bonus_affl",
             "ricardian_contract": ""
         },
         {

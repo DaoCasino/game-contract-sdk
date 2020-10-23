@@ -83,6 +83,9 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
             case "newgamebon"_n.value:                                                                                 \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game_bonus);       \
                 break;                                                                                                 \
+            case "newgamebonaf"_n.value:                                                                               \
+                game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::new_game_bonus_affl);  \
+                break;                                                                                                 \
             case "gameaction"_n.value:                                                                                 \
                 game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::game_action);          \
                 break;                                                                                                 \
