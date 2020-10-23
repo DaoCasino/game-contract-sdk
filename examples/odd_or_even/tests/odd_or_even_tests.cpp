@@ -202,6 +202,32 @@ BOOST_FIXTURE_TEST_CASE(bet_and_lose_two_rounds_mixed, odd_or_even_tester)
 
 // player stats
 
+BOOST_FIXTURE_TEST_CASE(bet_twice_stats, odd_or_even_tester)
+{
+    auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
+    roll(ses_id, odd_number);
+    roll(ses_id, odd_number, STRSYM("15.0000"), STRSYM("5.0000"));
+    take(ses_id);
+    check_player_win(STRSYM("10.0000"), STRSYM("5.0000"));
+
+    auto stats = get_player_stats(player_name);
+    BOOST_REQUIRE_EQUAL(stats["sessions_created"].as<int>(), 1);
+    BOOST_REQUIRE_EQUAL(stats["volume_real"].as<asset>(), STRSYM("20.0000"));
+    BOOST_REQUIRE_EQUAL(stats["volume_bonus"].as<asset>(), STRSYM("10.0000"));
+    BOOST_REQUIRE_EQUAL(stats["profit_real"].as<asset>(), STRSYM("10.0000"));
+    BOOST_REQUIRE_EQUAL(stats["profit_bonus"].as<asset>(), STRSYM("5.0000"));
+
+    ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
+    roll(ses_id, odd_number);
+    roll(ses_id, even_number, STRSYM("15.0000"), STRSYM("5.0000"));
+
+    stats = get_player_stats(player_name);
+    BOOST_REQUIRE_EQUAL(stats["sessions_created"].as<int>(), 2);
+    BOOST_REQUIRE_EQUAL(stats["volume_real"].as<asset>(), STRSYM("40.0000"));
+    BOOST_REQUIRE_EQUAL(stats["volume_bonus"].as<asset>(), STRSYM("20.0000"));
+    BOOST_REQUIRE_EQUAL(stats["profit_real"].as<asset>(), STRSYM("0.0000"));
+    BOOST_REQUIRE_EQUAL(stats["profit_bonus"].as<asset>(), STRSYM("0.0000"));
+}
 
 #endif
 
