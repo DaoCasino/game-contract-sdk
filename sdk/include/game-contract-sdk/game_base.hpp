@@ -235,7 +235,7 @@ class game : public eosio::contract {
     void require_random() {
         const auto& session = get_session(current_session);
 
-        check_only_states(session, {state::req_action}, "state should be 'req_action'");
+        check_only_states(session, {state::req_action, state::req_signidice_part_2}, "state should be 'req_action' or 'req_signidice_part_2'");
 
         sessions.modify(
             session, get_self(), [&](auto& obj) { obj.state = static_cast<uint8_t>(state::req_signidice_part_1); });
@@ -717,7 +717,7 @@ class game : public eosio::contract {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
-            "newdeposit"_n,
+            "sesnewdepo"_n,
             std::make_tuple(
                 get_self(),
                 ses.player,
@@ -743,7 +743,7 @@ class game : public eosio::contract {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
-            "newpayout"_n,
+            "sespayout"_n,
             std::make_tuple(
                 get_self(),
                 ses.player,
