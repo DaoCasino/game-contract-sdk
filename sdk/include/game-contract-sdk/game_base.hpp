@@ -587,6 +587,7 @@ class game : public eosio::contract {
         const auto& updated_session = get_session(ses_id);
 
         notify_new_session(updated_session);
+        notify_new_session_legacy(updated_session);
 
         emit_event(updated_session, events::game_started{});
 
@@ -681,10 +682,21 @@ class game : public eosio::contract {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
-            "newsession"_n,
+            "newsessionpl"_n,
             std::make_tuple(
                 get_self(),
                 ses.player
+            )
+        ).send();
+    }
+
+    void notify_new_session_legacy(const session_row& ses) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "newsession"_n,
+            std::make_tuple(
+                get_self()
             )
         ).send();
     }
