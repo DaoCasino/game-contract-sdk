@@ -357,18 +357,24 @@ class game : public eosio::contract {
     }
 
     CONTRACT_ACTION(newgamebon)
-    void new_game_bonus(uint64_t ses_id, uint64_t casino_id, name from, asset quantity) {
-        new_game_bonus_internal(ses_id, casino_id, from, quantity);
-    }
+    void new_game_bonus(uint64_t ses_id, uint64_t casino_id, name from, asset quantity, const std::string& affiliate_id) {
+        eosio::check(quantity > zero_asset, "bonus quantity must be positive");
+        // session might have been created if we transfered first
+        const auto& session = get_or_create_session(ses_id, from, zero_asset);
+        sessions.modify(session, get_self(), [&](auto& row) {
+            row.deposit += quantity;
+            row.bonus_deposit = quantity;
+        });
+        notify_new_bonus_deposit(session, quantity);
 
-    CONTRACT_ACTION(newgamebonaf)
-    void new_game_bonus_affl(uint64_t ses_id, uint64_t casino_id, name from, asset quantity, const std::string& affiliate_id) {
-        new_game_bonus_internal(ses_id, casino_id, from, quantity);
+        // auth check & remaining logic
+        new_game_internal(ses_id, casino_id);
     }
 
     CONTRACT_ACTION(depositbon)
     void deposit_bonus(uint64_t ses_id, name from, asset quantity) {
         require_auth(from);
+        eosio::check(quantity > zero_asset, "bonus quantity must be positive");
         const auto& session = get_session(ses_id);
         handle_extra_deposit(session, from, quantity);
         // deposit was already updated so we only need to update bonus deposit
@@ -592,19 +598,6 @@ class game : public eosio::contract {
         emit_event(updated_session, events::game_started{});
 
         on_new_game(ses_id);
-    }
-
-    void new_game_bonus_internal(uint64_t ses_id, uint64_t casino_id, name from, asset quantity) {
-        // session might have been created if we transfered first
-        const auto& session = get_or_create_session(ses_id, from, zero_asset);
-        sessions.modify(session, get_self(), [&](auto& row) {
-            row.deposit += quantity;
-            row.bonus_deposit = quantity;
-        });
-        notify_new_bonus_deposit(session, quantity);
-
-        // auth check & remaining logic
-        new_game_internal(ses_id, casino_id);
     }
 
   private:
