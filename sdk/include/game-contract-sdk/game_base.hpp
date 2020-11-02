@@ -301,7 +301,7 @@ class game : public eosio::contract {
     void update_max_win(asset new_max_win) {
         const auto& session = get_session(current_session);
 
-        check_only_states(session, {state::req_action}, "state should be 'req_action'");
+        check_only_states(session, {state::req_action, state::req_deposit}, "state should be 'req_action' or 'req_deposit'");
 
         // max casino loss
         const auto max_casino_lost = new_max_win - session.deposit;
