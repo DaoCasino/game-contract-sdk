@@ -362,7 +362,7 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, proto_dice_tester) try {
     game_action(game_name, ses_id, 0, {30});
 
     BOOST_REQUIRE_EQUAL(transfer(player_name, game_name, STRSYM("5.0000"), std::to_string(ses_id)),
-                        wasm_assert_msg("state should be 'req_deposit'"));
+                        wasm_assert_msg("state should be 'req_allow_deposit'"));
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
     auto sign_1 = rsa_sign(rsa_keys.at(platform_name), digest);
@@ -380,7 +380,7 @@ BOOST_FIXTURE_TEST_CASE(deposit_bad_state_test, proto_dice_tester) try {
     // clang-format on
 
     BOOST_REQUIRE_EQUAL(transfer(player_name, game_name, STRSYM("5.0000"), std::to_string(ses_id)),
-                        wasm_assert_msg("state should be 'req_deposit'"));
+                        wasm_assert_msg("state should be 'req_allow_deposit'"));
 }
 FC_LOG_AND_RETHROW()
 
@@ -407,7 +407,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
                 ("req_id", ses_id)
                 ("type", 0)
                 ("params", std::vector<param_t>{30})
-        ), wasm_assert_msg("state should be 'req_deposit' or 'req_action'"));
+        ), wasm_assert_msg("state should be 'req_allow_deposit' or 'req_action'"));
     // clang-format on
 
     auto digest = get_game_session(game_name, ses_id)["digest"].as<sha256>();
@@ -431,7 +431,7 @@ BOOST_FIXTURE_TEST_CASE(game_action_bad_state_test, proto_dice_tester) try {
                 ("req_id", ses_id)
                 ("type", 0)
                 ("params", std::vector<param_t>{30})
-        ), wasm_assert_msg("state should be 'req_deposit' or 'req_action'")
+        ), wasm_assert_msg("state should be 'req_allow_deposit' or 'req_action'")
     );
     // clang-format on
 }
