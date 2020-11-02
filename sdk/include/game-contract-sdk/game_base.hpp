@@ -67,7 +67,7 @@ class game : public eosio::contract {
             static constexpr uint32_t type{1u};
 
             uint8_t action_type;
-            bool need_deposit;
+            bool need_deposit; // actually allow_deposit but it's hard to rename
             EOSLIB_SERIALIZE(action_request, (action_type)(need_deposit))
         };
 
@@ -212,7 +212,7 @@ class game : public eosio::contract {
 
   protected:
     /* game session state changers */
-    void require_action(uint8_t action_type, bool need_deposit = false) {
+    void require_action(uint8_t action_type, bool allow_deposit = false) {
         const auto& session = get_session(current_session);
 
         check_only_states(session,
@@ -220,14 +220,14 @@ class game : public eosio::contract {
                           "state should be 'req_start', 'req_action' or 'req_signidice_part_2'");
 
         sessions.modify(session, get_self(), [&](auto& obj) {
-            if (!need_deposit) {
+            if (!allow_deposit) {
                 obj.state = static_cast<uint8_t>(state::req_action);
             } else {
                 obj.state = static_cast<uint8_t>(state::req_deposit);
             }
         });
 
-        emit_event(session, events::action_request{action_type, need_deposit});
+        emit_event(session, events::action_request{action_type, allow_deposit});
     }
 
     void require_random() {
@@ -345,7 +345,7 @@ class game : public eosio::contract {
             session = get_session(ses_id);
 
             check_not_expired(session);
-            check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
+            check_only_states(session, {state::req_deposit}, "state should be 'req_deposit'");
             eosio::check(session.player == from, "only player can deposit");
 
             sessions.modify(session_itr, get_self(), [&](auto& row) {
