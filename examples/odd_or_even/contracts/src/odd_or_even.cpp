@@ -44,7 +44,7 @@ void odd_or_even::on_random(uint64_t ses_id, checksum256 rand) {
         if (round == MAX_NUM_ROUNDS) {
             return finish_game(get_session(ses_id).deposit * 3 / 2);
         }
-        return require_action(0);
+        return require_action(0, true);
     }
     eosio::print("player loses\n");
     // player loses

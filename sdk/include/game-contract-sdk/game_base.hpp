@@ -46,11 +46,11 @@ class game : public eosio::contract {
     /* game states */
     // clang-format off
     enum class state : uint8_t {
-        req_deposit = 0,        // <- init|req_signidice_part_2, -> req_start|req_action
-        req_start,              // <- req_deposit, -> req_action|failed
-        req_action,             // <- req_start|req_deposit, -> req_signidice_part_1|failed
+        req_allow_deposit = 0,      // <- init|req_signidice_part_2, -> req_start|req_action
+        req_start,              // <- req_allow_deposit, -> req_action|failed
+        req_action,             // <- req_start|req_allow_deposit, -> req_signidice_part_1|failed
         req_signidice_part_1,   // <- req_action, -> req_signidice_part_2|falied
-        req_signidice_part_2,   // <- req_signidice_part_1, -> finished|req_deposit|req_action|failed
+        req_signidice_part_2,   // <- req_signidice_part_1, -> finished|req_allow_deposit|req_action|failed
         finished,               // <- req_signidice_part_2
     };
     // clang-format on
@@ -67,7 +67,7 @@ class game : public eosio::contract {
             static constexpr uint32_t type{1u};
 
             uint8_t action_type;
-            bool need_deposit;
+            bool need_deposit; // actually allow_deposit but it's hard to rename
             EOSLIB_SERIALIZE(action_request, (action_type)(need_deposit))
         };
 
@@ -214,7 +214,7 @@ class game : public eosio::contract {
 
   protected:
     /* game session state changers */
-    void require_action(uint8_t action_type, bool need_deposit = false) {
+    void require_action(uint8_t action_type, bool allow_deposit = false) {
         const auto& session = get_session(current_session);
 
         check_only_states(session,
@@ -222,14 +222,14 @@ class game : public eosio::contract {
                           "state should be 'req_start', 'req_action' or 'req_signidice_part_2'");
 
         sessions.modify(session, get_self(), [&](auto& obj) {
-            if (!need_deposit) {
+            if (!allow_deposit) {
                 obj.state = static_cast<uint8_t>(state::req_action);
             } else {
-                obj.state = static_cast<uint8_t>(state::req_deposit);
+                obj.state = static_cast<uint8_t>(state::req_allow_deposit);
             }
         });
 
-        emit_event(session, events::action_request{action_type, need_deposit});
+        emit_event(session, events::action_request{action_type, allow_deposit});
     }
 
     void require_random() {
@@ -328,7 +328,7 @@ class game : public eosio::contract {
     void update_max_win(asset new_max_win) {
         const auto& session = get_session(current_session);
 
-        check_only_states(session, {state::req_action}, "state should be 'req_action'");
+        check_only_states(session, {state::req_action, state::req_allow_deposit}, "state should be 'req_action' or 'req_allow_deposit'");
 
         // max casino loss
         const auto max_casino_lost = new_max_win - session.deposit;
@@ -409,9 +409,9 @@ class game : public eosio::contract {
         check_from_platform_game();
         check_not_expired(session);
 
-        // allow `req_deposit` in case of zero deposit from player
+        // allow `req_allow_deposit` in case of zero deposit from player
         check_only_states(
-            session, {state::req_action, state::req_deposit}, "state should be 'req_deposit' or 'req_action'");
+            session, {state::req_action, state::req_allow_deposit}, "state should be 'req_allow_deposit' or 'req_action'");
 
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
@@ -565,13 +565,12 @@ class game : public eosio::contract {
 
     void handle_extra_deposit(const session_row& session, name from, asset quantity) {
         check_not_expired(session);
-        check_only_states(session, {state::req_deposit, state::req_action}, "state should be 'req_deposit' or 'req_action'");
+        check_only_states(session, {state::req_allow_deposit}, "state should be 'req_allow_deposit'");
         eosio::check(session.player == from, "only player can deposit");
 
         sessions.modify(session, get_self(), [&](auto& row) {
             row.deposit += quantity;
             row.last_update = eosio::current_time_point();
-            row.state = static_cast<uint8_t>(state::req_action);
         });
     }
 
