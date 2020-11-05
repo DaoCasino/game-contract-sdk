@@ -39,7 +39,7 @@ void odd_or_even::on_random(uint64_t ses_id, checksum256 rand) {
 
     const auto odd = service::cut_to<game_sdk::param_t>(rand) % 2;
     if (odd) {
-        eosio::print("player wins\n");
+        eosio::print("player wins round %d\n", round);
         // player wins
         if (round == MAX_NUM_ROUNDS) {
             return finish_game(get_session(ses_id).deposit * 3 / 2);

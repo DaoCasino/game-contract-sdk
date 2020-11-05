@@ -252,6 +252,44 @@ class game : public eosio::contract {
         finish_game(player_payout, std::nullopt);
     }
 
+    void handle_player_win(const session_row& session, const asset player_win, const std::string& memo = "player win[game]") {
+        eosio::check(player_win > zero_asset, "invariant check failed: player win should be positive");
+        const auto bonus_win = player_win * session.bonus_deposit.amount / session.deposit.amount;
+        const auto real_win = player_win - bonus_win;
+        const auto real_deposit = session.deposit - session.bonus_deposit;
+
+        const auto casino_name = get_casino(session.casino_id);
+        // transfer win
+        transfer_from_casino(casino_name, session.player, real_win);
+        transfer_bonus_from_casino(casino_name, session.player, session.bonus_deposit + bonus_win);
+
+        // transfer back real deposit
+        transfer(session.player, real_deposit, memo);
+        notify_new_real_payout(session, real_deposit + real_win);
+    }
+
+    void handle_player_loss_or_tie(const session_row& session, const asset player_payout, std::string memo = "") {
+        eosio::check(player_payout <= session.deposit, "invariant check failed: player payout cannot exceed deposit");
+        if (memo.find("session expired") == std::string::npos) {
+            memo = player_payout < session.deposit ? "player loss[game]" : "player tie[game]";
+        }
+        const auto bonus_payout = player_payout * session.bonus_deposit.amount / session.deposit.amount;
+        const auto real_payout = player_payout - bonus_payout;
+
+        const auto casino_name = get_casino(session.casino_id);
+        transfer(session.player, real_payout, memo);
+        transfer_bonus_from_casino(casino_name, session.player, bonus_payout);
+
+        /* only transfer real win, bonuses are 'burned' */
+        const auto real_deposit = session.deposit - session.bonus_deposit;
+        const auto casino_real_win = real_deposit - real_payout;
+        transfer(casino_name, casino_real_win, "casino win");
+
+        if (real_payout > zero_asset) {
+            notify_new_real_payout(session, real_payout);
+        }
+    }
+
     void finish_game(asset player_payout, std::optional<std::vector<param_t>>&& msg) {
         const auto& session = get_session(current_session);
 
@@ -263,33 +301,11 @@ class game : public eosio::contract {
         const auto player_win = player_payout - session.deposit;
         eosio::check(player_win <= session.last_max_win, "player win should be less than 'last_max_win'");
 
-        const auto casino_name = get_casino(session.casino_id);
-        const auto bonus_payout = player_payout * session.bonus_deposit.amount / session.deposit.amount;
-        const auto real_payout = player_payout - bonus_payout;
-
-        /* payout more than deposit */
         if (player_win > zero_asset) {
-            // request player win from casino
-            const auto bonus_win = player_win * session.bonus_deposit.amount / session.deposit.amount;
-            const auto real_win = player_win - bonus_win;
-
-            // transfer win
-            transfer_from_casino(casino_name, session.player, real_win);
-            transfer_bonus_from_casino(casino_name, session.player, session.bonus_deposit + bonus_win);
-
-            // transfer back real deposit
-            transfer(session.player, session.deposit - session.bonus_deposit, "player win[game]");
+            handle_player_win(session, player_win);
         } else {
-            transfer(session.player, real_payout, "player win[game]");
-            transfer_bonus_from_casino(casino_name, session.player, bonus_payout);
-
-            /* only transfer real win, bonuses are 'burned' */
-            const auto real_deposit = session.deposit - session.bonus_deposit;
-            const auto casino_real_win = real_deposit - real_payout;
-            transfer(casino_name, casino_real_win, "casino win");
+            handle_player_loss_or_tie(session, player_payout);
         }
-
-        notify_new_payout(session, real_payout);
 
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
@@ -480,12 +496,8 @@ class game : public eosio::contract {
         switch (static_cast<state>(session.state)) {
         /* if casino doesn't provide signidice we assume that casino lost */
         case state::req_signidice_part_2:
-            // transfer deposit to player
-            transfer(session.player, session.deposit, "player win [session expired]");
-            // request last reported max_win amount funds for player
-            transfer_from_casino(get_casino(session.casino_id), session.player, session.last_max_win);
-            notify_new_payout(session, session.last_max_win + session.deposit);
             player_win = session.last_max_win;
+            handle_player_win(session, player_win, "player win [session expired]");
             break;
 
         /* if player doesn't start game just refund deposit (here we haven't info about casino) */
@@ -493,13 +505,13 @@ class game : public eosio::contract {
         /* if platform doesn't provide signidice we refund deposit to player */
         case state::req_signidice_part_1:
             // transfer deposit to player
-            transfer(session.player, session.deposit, "refund [session expired]");
+            handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
             break;
 
         /* in other cases we assume that player lost */
         default:
-            transfer(get_casino(session.casino_id), session.deposit, "player lost");
-            player_win -= session.deposit;
+            player_win = -session.deposit;
+            handle_player_loss_or_tie(session, zero_asset, "loss [session expired]");
         }
 
         // if session isn't started we have no info about casino and no need to perform any action
@@ -744,7 +756,7 @@ class game : public eosio::contract {
         ).send();
     }
 
-    void notify_new_payout(const session_row& ses, asset quantity) const {
+    void notify_new_real_payout(const session_row& ses, asset quantity) const {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),

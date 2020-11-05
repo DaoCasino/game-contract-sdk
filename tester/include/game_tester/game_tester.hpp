@@ -398,7 +398,7 @@ class game_tester : public TESTER {
                     game_name,
                     N(newgamebon),
                     {platform_name, N(gameaction)},
-                    mvo()("req_id", ses_id)("casino_id", casino_id)("from", player)("quantity", bonus)
+                    mvo()("req_id", ses_id)("casino_id", casino_id)("from", player)("quantity", bonus)("affiliate_id", "")
                 ), result);
 
         } else {
