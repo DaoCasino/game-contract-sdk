@@ -318,6 +318,7 @@ class game_tester : public TESTER {
         // allow platform to make newgame action in this game
         link_authority(platform_name, game_name, N(gameaction), N(newgame));
         link_authority(platform_name, game_name, N(gameaction), N(newgameaffl));
+        link_authority(platform_name, game_name, N(gameaction), N(newgamebon));
         link_authority(platform_name, game_name, N(gameaction), N(gameaction));
         link_authority(platform_name, game_name, N(gameaction), N(close));
 
@@ -372,6 +373,48 @@ class game_tester : public TESTER {
         return ses_id++;
     }
 
+    uint64_t new_game_session(name game_name,
+                              name player,
+                              uint64_t casino_id,
+                              asset real,
+                              asset bonus,
+                              const action_result& result = success()) {
+        BOOST_TEST((real.get_amount() > 0 || bonus.get_amount() > 0), "real or bonus should be greater than 0");
+
+        static uint64_t ses_id{0u};
+
+        if (real.get_amount() > 0) {
+            BOOST_REQUIRE_EQUAL(
+                push_action(N(eosio.token),
+                            N(transfer),
+                            player,
+                            mvo()("from", player)("to", game_name)("quantity", real)("memo", std::to_string(ses_id))),
+                success());
+        }
+
+        if (bonus.get_amount() > 0) {
+            BOOST_REQUIRE_EQUAL(
+                push_action(
+                    game_name,
+                    N(newgamebon),
+                    {platform_name, N(gameaction)},
+                    mvo()("req_id", ses_id)("casino_id", casino_id)("from", player)("quantity", bonus)("affiliate_id", "")
+                ), result);
+
+        } else {
+            BOOST_REQUIRE_EQUAL(
+                push_action(
+                    game_name,
+                    N(newgame),
+                    {platform_name, N(gameaction)},
+                    mvo()("req_id", ses_id)("casino_id", casino_id)
+                ), result);
+        }
+        // format-clang on
+
+        return ses_id++;
+    }
+
     void game_action(name game_name,
                      uint64_t ses_id,
                      uint16_t action_type,
@@ -395,14 +438,48 @@ class game_tester : public TESTER {
         // format-clang on
     }
 
+    void game_action(name game_name,
+                     uint64_t ses_id,
+                     uint16_t action_type,
+                     std::vector<param_t> params,
+                     asset real,
+                     asset bonus,
+                     const action_result& result = success()) {
+        auto player = get_game_session(game_name, ses_id)["player"].as<name>();
+
+        if (real.get_amount() > 0) {
+            transfer(player, game_name, real, std::to_string(ses_id));
+        }
+
+        if (bonus.get_amount() > 0) {
+            BOOST_REQUIRE_EQUAL(
+                push_action(game_name, N(depositbon), {player, N(active)}, mvo()
+                    ("req_id", ses_id)
+                    ("from", player)
+                    ("quantity", bonus)
+                ),
+                success()
+            );
+        }
+        // format-clang off
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                game_name,
+                N(gameaction),
+                {platform_name, N(gameaction)},
+                mvo()("req_id", ses_id)("type", action_type)("params", params)
+            ), result);
+        // format-clang on
+    }
+
 #ifdef IS_DEBUG
-    void push_next_random(name game_name, sha256&& next_random) {
+    void push_next_random(name game_name, const sha256& next_random) {
         BOOST_REQUIRE_EQUAL(
             push_action(game_name, N(pushnrandom), {platform_name, N(active)}, mvo()("next_random", next_random)),
             success());
     }
 
-    void push_to_prng(name game_name, uint64_t&& next_random) {
+    void push_to_prng(name game_name, uint64_t next_random) {
         BOOST_REQUIRE_EQUAL(
             push_action(game_name, N(pushprng), {platform_name, N(active)}, mvo()("next_random", next_random)),
             success());
@@ -457,6 +534,17 @@ class game_tester : public TESTER {
     }
 
     asset get_balance(name account) const { return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account); }
+
+    asset get_bonus_balance(name account) {
+        vector<char> data = get_row_by_account(casino_name, casino_name, N(bonusbalance), account);
+        return data.empty() ? asset(0, symbol{CORE_SYM}) :
+            abi_ser[casino_name].binary_to_variant("bonus_balance_row", data, abi_serializer_max_time)["balance"].as<asset>();
+    }
+
+    fc::variant get_player_stats(name account) {
+        vector<char> data = get_row_by_account(casino_name, casino_name, N(playerstats), account);
+        return data.empty() ? fc::variant() : abi_ser[casino_name].binary_to_variant("player_stats_row", data, abi_serializer_max_time);
+    }
 
     fc::variant get_game_session(name game_name, uint64_t ses_id) {
         vector<char> data = get_row_by_account(game_name, game_name, N(session), ses_id);

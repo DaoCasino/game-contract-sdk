@@ -103,6 +103,50 @@
             ]
         },
         {
+            "name": "new_game_bonus",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "casino_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "affiliate_id",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "deposit_bonus",
+            "base": "",
+            "fields": [
+                {
+                    "name": "req_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "pair_uint16_uint64",
             "base": "",
             "fields": [
@@ -146,6 +190,10 @@
                 },
                 {
                     "name": "deposit",
+                    "type": "asset"
+                },
+                {
+                    "name": "bonus_deposit",
                     "type": "asset"
                 },
                 {
@@ -221,6 +269,16 @@
         {
             "name": "newgameaffl",
             "type": "new_game_affl",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "newgamebon",
+            "type": "new_game_bonus",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "depositbon",
+            "type": "deposit_bonus",
             "ricardian_contract": ""
         },
         {
