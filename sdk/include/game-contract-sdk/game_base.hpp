@@ -358,7 +358,8 @@ class game : public eosio::contract {
         } else {
             handle_extra_deposit(get_session(ses_id), from, quantity);
         }
-        notify_new_deposit(get_session(ses_id), quantity);
+        notify_new_real_deposit(get_session(ses_id), quantity);
+        notify_new_real_deposit_legacy(get_session(ses_id), quantity);
     }
 
     /* contract actions */
@@ -729,11 +730,23 @@ class game : public eosio::contract {
         ).send();
     }
 
-    void notify_new_deposit(const session_row& ses, asset quantity) const {
+    void notify_new_real_deposit_legacy(const session_row& ses, asset quantity) const {
         eosio::action(
             {get_self(),"active"_n},
             get_casino(ses.casino_id),
             "sesnewdepo"_n,
+            std::make_tuple(
+                get_self(),
+                quantity
+            )
+        ).send();
+    }
+
+    void notify_new_real_deposit(const session_row& ses, asset quantity) const {
+        eosio::action(
+            {get_self(),"active"_n},
+            get_casino(ses.casino_id),
+            "sesnewdepo2"_n,
             std::make_tuple(
                 get_self(),
                 ses.player,
