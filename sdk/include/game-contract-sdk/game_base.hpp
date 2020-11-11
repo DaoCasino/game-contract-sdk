@@ -390,7 +390,7 @@ class game : public eosio::contract {
 
     CONTRACT_ACTION(depositbon)
     void deposit_bonus(uint64_t ses_id, name from, asset quantity) {
-        require_auth(from);
+        check_from_platform_game();
         eosio::check(quantity > zero_asset, "bonus quantity must be positive");
         const auto& session = get_session(ses_id);
         handle_extra_deposit(session, from, quantity);

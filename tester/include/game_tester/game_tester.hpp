@@ -319,6 +319,7 @@ class game_tester : public TESTER {
         link_authority(platform_name, game_name, N(gameaction), N(newgame));
         link_authority(platform_name, game_name, N(gameaction), N(newgameaffl));
         link_authority(platform_name, game_name, N(gameaction), N(newgamebon));
+        link_authority(platform_name, game_name, N(gameaction), N(depositbon));
         link_authority(platform_name, game_name, N(gameaction), N(gameaction));
         link_authority(platform_name, game_name, N(gameaction), N(close));
 
@@ -453,7 +454,7 @@ class game_tester : public TESTER {
 
         if (bonus.get_amount() > 0) {
             BOOST_REQUIRE_EQUAL(
-                push_action(game_name, N(depositbon), {player, N(active)}, mvo()
+                push_action(game_name, N(depositbon), {platform_name, N(gameaction)}, mvo()
                     ("req_id", ses_id)
                     ("from", player)
                     ("quantity", bonus)
