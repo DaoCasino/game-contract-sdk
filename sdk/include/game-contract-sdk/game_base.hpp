@@ -142,7 +142,7 @@ class game : public eosio::contract {
 
     struct [[eosio::table("sesfirstact"), eosio::contract("game")]] session_first_action_row {
         uint64_t ses_id;
-        bool did_first_action; // true if player did first action
+        bool acted; // true if player did first action
 
         uint64_t primary_key() const { return ses_id; }
     };
@@ -435,9 +435,9 @@ class game : public eosio::contract {
             obj.state = static_cast<uint8_t>(state::req_action);
         });
 
-        if (!session_first_action.did_first_action) {
+        if (!session_first_action.acted) {
             sessions_first_action.modify(session_first_action, get_self(), [&](auto& row) {
-                row.did_first_action = true;
+                row.acted = true;
             });
         }
     
@@ -534,7 +534,7 @@ class game : public eosio::contract {
         /* if player haven't made first action just refund depsit */
         case state::req_action:
         case state::req_allow_deposit:
-            if (!session_first_action.did_first_action) {
+            if (!session_first_action.acted) {
                 handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
                 break;
             }
@@ -578,7 +578,7 @@ class game : public eosio::contract {
     const session_row& create_session(uint64_t ses_id, name player, asset deposit) {
         sessions_first_action.emplace(get_self(), [&](auto& row) {
             row.ses_id = ses_id;
-            row.did_first_action = false;
+            row.acted = false;
         });
 
         return *sessions.emplace(get_self(), [&](auto& row) {
