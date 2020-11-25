@@ -140,9 +140,18 @@ class game : public eosio::contract {
 
     using session_table = eosio::multi_index<"session"_n, session_row>;
 
+    struct [[eosio::table("sesfirstact"), eosio::contract("game")]] session_first_action_row {
+        uint64_t ses_id;
+        bool did_first_action; // true if player did first action
+
+        uint64_t primary_key() const { return ses_id; }
+    };
+    using session_first_action_table = eosio::multi_index<"sesfirstact"_n, session_first_action_row>;
+
   public:
     game(name receiver, name code, eosio::datastream<const char*> ds)
-        : contract(receiver, code, ds), sessions(_self, _self.value) {
+        : contract(receiver, code, ds), sessions(_self, _self.value),
+        sessions_first_action(_self, _self.value) {
         // load global singleton to memory
         global = global_singleton(_self, _self.value).get_or_default();
 
@@ -185,6 +194,10 @@ class game : public eosio::contract {
 
     const session_row& get_session(uint64_t ses_id) const {
         return sessions.get(ses_id, "session with this ses_id not found");
+    }
+
+    const session_first_action_row& get_session_first_action(uint64_t ses_id) const {
+        return sessions_first_action.get(ses_id, "session's first action with this ses_id not found");
     }
 
     std::optional<param_t> get_param_value(uint64_t ses_id, uint16_t param_type) const {
@@ -292,6 +305,7 @@ class game : public eosio::contract {
 
     void finish_game(asset player_payout, std::optional<std::vector<param_t>>&& msg) {
         const auto& session = get_session(current_session);
+        const auto& session_first_action = get_session_first_action(current_session);
 
         check_only_states(session,
                           {state::req_action, state::req_signidice_part_2},
@@ -320,6 +334,7 @@ class game : public eosio::contract {
             emit_event(session, events::game_finished{player_win});
 
         sessions.erase(session);
+        sessions_first_action.erase(session_first_action);
 
         on_finish(current_session);
     }
@@ -406,6 +421,7 @@ class game : public eosio::contract {
     void game_action(uint64_t ses_id, uint16_t type, std::vector<param_t> params) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
+        const auto& session_first_action = get_session_first_action(ses_id);
 
         check_from_platform_game();
         check_not_expired(session);
@@ -419,6 +435,12 @@ class game : public eosio::contract {
             obj.state = static_cast<uint8_t>(state::req_action);
         });
 
+        if (!session_first_action.did_first_action) {
+            sessions_first_action.modify(session_first_action, get_self(), [&](auto& row) {
+                row.did_first_action = true;
+            });
+        }
+    
         on_action(ses_id, type, params);
     }
 
@@ -489,6 +511,7 @@ class game : public eosio::contract {
     void close(uint64_t ses_id) {
         set_current_session(ses_id);
         const auto& session = get_session(ses_id);
+        const auto& session_first_action = get_session_first_action(ses_id);
 
         eosio::check(is_expired(session), "session isn't expired, only expired session can be closed");
 
@@ -508,7 +531,13 @@ class game : public eosio::contract {
             // transfer deposit to player
             handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
             break;
-
+        /* if player haven't made first action just refund depsit */
+        case state::req_action:
+        case state::req_allow_deposit:
+            if (!session_first_action.did_first_action) {
+                handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
+                break;
+            }
         /* in other cases we assume that player lost */
         default:
             player_win = -session.deposit;
@@ -518,6 +547,7 @@ class game : public eosio::contract {
         // if session isn't started we have no info about casino and no need to perform any action
         if (static_cast<state>(session.state) == state::req_start) {
             sessions.erase(session);
+            sessions_first_action.erase(session_first_action);
             return;
         }
 
@@ -526,6 +556,7 @@ class game : public eosio::contract {
         emit_event(session, events::game_failed{player_win});
 
         sessions.erase(session);
+        sessions_first_action.erase(session_first_action);
 
         on_finish(ses_id);
     }
@@ -545,6 +576,11 @@ class game : public eosio::contract {
 
   private:
     const session_row& create_session(uint64_t ses_id, name player, asset deposit) {
+        sessions_first_action.emplace(get_self(), [&](auto& row) {
+            row.ses_id = ses_id;
+            row.did_first_action = false;
+        });
+
         return *sessions.emplace(get_self(), [&](auto& row) {
             row.ses_id = ses_id;
             row.ses_seq = global.session_seq++;
@@ -615,6 +651,7 @@ class game : public eosio::contract {
   private:
     session_table sessions;
     global_row global;
+    session_first_action_table sessions_first_action;
     uint64_t current_session; // id of session for which was called action
 
   private:

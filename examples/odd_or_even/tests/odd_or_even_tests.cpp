@@ -221,10 +221,10 @@ BOOST_FIXTURE_TEST_CASE(bet_and_win_two_rounds_bonus_mixed, odd_or_even_tester)
 BOOST_FIXTURE_TEST_CASE(session_expired_player_inactive, odd_or_even_tester)
 {
     const auto ses_id = new_game_session(game_name, player_name, casino_id, STRSYM("5.0000"), STRSYM("5.0000"));
-    // player doesn't act -> loses his entire deposit
+    // player doesn't act -> deposit returns
     produce_block(fc::seconds(game_session_ttl + 1));
     close_session(game_name, ses_id);
-    check_player_win(-STRSYM("5.0000"), -STRSYM("5.0000"));
+    check_player_win(-STRSYM("0.0000"), -STRSYM("0.0000"));
 }
 
 BOOST_FIXTURE_TEST_CASE(session_expired_platform_no_signidice, odd_or_even_tester)
