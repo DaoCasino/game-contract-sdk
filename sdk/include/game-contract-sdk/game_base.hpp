@@ -418,7 +418,7 @@ class game : public eosio::contract {
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_action);
-            if (!session.acted) {
+            if (!obj.acted) {
                 obj.acted = true;
             }
         });
