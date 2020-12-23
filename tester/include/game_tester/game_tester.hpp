@@ -49,6 +49,7 @@
 
 // just sugar
 #define STRSYM(str) core_sym::from_string(str)
+#define ASSET(str) sym::from_string(str)
 
 using namespace eosio::chain;
 using namespace eosio::testing;
@@ -87,15 +88,9 @@ class game_tester : public TESTER {
     game_tester() {
         produce_blocks(2);
         RAND_set_rand_method(random_mock::RAND_stdlib());
-
-        create_accounts({N(eosio.token), platform_name, events_name, casino_name, service_name});
+        create_accounts({platform_name, events_name, casino_name, service_name});
 
         produce_blocks(100);
-        deploy_contract<contracts::system::token>(N(eosio.token));
-
-        symbol core_symbol = symbol{CORE_SYM};
-        create_currency(N(eosio.token), config::system_account_name, asset(100000000000000, core_symbol));
-        issue(config::system_account_name, asset(1672708210000, core_symbol));
 
         deploy_contract<contracts::platform::platfrm>(platform_name);
         deploy_contract<contracts::platform::events>(events_name);
@@ -121,6 +116,10 @@ class game_tester : public TESTER {
                     platform_name,
                     mvo()("id", casino_id)("rsa_pubkey", rsa_pem_pubkey(rsa_keys.at(casino_name))));
 
+        const std::string core_token = CORE_SYM_NAME;
+        const name eosio_token_name = N(eosio.token);
+        allow_token(core_token, CORE_SYM_PRECISION, eosio_token_name);
+
         set_authority(platform_name, N(gameaction), {get_public_key(platform_name, "gameaction")}, N(active));
 
         const auto platform_abi_def = fc::json::from_file(contracts::platform::events::abi_path()).as<abi_def>();
@@ -145,8 +144,8 @@ class game_tester : public TESTER {
         return push_action(contract, N(create), contract, act);
     }
 
-    action_result issue(const name& to, const asset& amount) {
-        return push_action(N(eosio.token),
+    action_result issue(const name& to, const asset& amount, const name& contract) {
+        return push_action(contract,
                            N(issue),
                            config::system_account_name,
                            mutable_variant_object()("to", to)("quantity", amount)("memo", ""));
@@ -155,7 +154,7 @@ class game_tester : public TESTER {
     action_result transfer(const name& from, const name& to, const asset& amount, const std::string& memo = "") {
         // clang-format off
         return push_action(
-            N(eosio.token),
+            get_token_contract(amount.get_symbol()),
             N(transfer),
             from,
             mutable_variant_object()
@@ -355,7 +354,7 @@ class game_tester : public TESTER {
         static uint64_t ses_id{0u};
 
         BOOST_REQUIRE_EQUAL(
-            push_action(N(eosio.token),
+            push_action(get_token_contract(deposit.get_symbol()),
                         N(transfer),
                         player,
                         mvo()("from", player)("to", game_name)("quantity", deposit)("memo", std::to_string(ses_id))),
@@ -534,7 +533,10 @@ class game_tester : public TESTER {
         // clang-format on
     }
 
-    asset get_balance(name account) const { return get_currency_balance(N(eosio.token), symbol(CORE_SYM), account); }
+    asset get_balance(name account, symbol sym = symbol{CORE_SYM}) const {
+        const auto contract = get_token_contract(sym);
+        return get_currency_balance(contract, sym, account); 
+    }
 
     asset get_bonus_balance(name account) {
         vector<char> data = get_row_by_account(casino_name, casino_name, N(bonusbalance), account);
@@ -551,6 +553,30 @@ class game_tester : public TESTER {
         vector<char> data = get_row_by_account(game_name, game_name, N(session), ses_id);
         return data.empty() ? fc::variant()
                             : abi_ser[game_name].binary_to_variant("session_row", data, abi_serializer_max_time);
+    }
+
+    void allow_token(const std::string& token_name, uint8_t precision, name contract) {
+        create_account(contract);
+        deploy_contract<contracts::system::token>(contract);
+
+        symbol symb = symbol{string_to_symbol_c(precision, token_name.c_str())};
+        create_currency( contract, config::system_account_name, asset(100000000000000, symb) );
+        issue( config::system_account_name, asset(1672708210000, symb), contract );
+
+        push_action(platform_name, N(addtoken), platform_name, mvo()
+            ("token_name", token_name)
+            ("contract", contract)
+        );
+        push_action(casino_name, N(addtoken), casino_name, mvo()
+            ("token_name", token_name)
+        );
+    }
+
+    name get_token_contract(symbol symbol) const {
+        vector<char> data = get_row_by_account(platform_name, platform_name, N(token), symbol.to_symbol_code().value);
+        const name eosio_token_name = N(eosio.token);
+        return data.empty() ? eosio_token_name
+            : abi_ser.at(platform_name).binary_to_variant("token_row", data, abi_serializer_max_time)["contract"].as<name>();
     }
 
   private:

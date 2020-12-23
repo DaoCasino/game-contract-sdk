@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 set(DAOBET_CONTRACTS_VERSION "v1.0.7")
-set(PLATFORM_CONTRACTS_VERSION "v1.1.2")
+set(PLATFORM_CONTRACTS_VERSION "v1.2.0-rc")
 
 find_package(eosio)
 

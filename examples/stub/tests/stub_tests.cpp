@@ -492,6 +492,113 @@ BOOST_FIXTURE_TEST_CASE(new_session_affl_test, stub_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE(new_session_token_test, stub_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    symbol kek_symbol = symbol{string_to_symbol_c(5, "KEK")};
+    allow_token("KEK", 5, N(token.kek));
+
+    transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
+
+    auto player_bet = ASSET("5.00000 KEK");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+    auto session = get_game_session(game_name, ses_id);
+
+    BOOST_REQUIRE_EQUAL(session["req_id"].as<uint64_t>(), ses_id);
+    BOOST_REQUIRE_EQUAL(session["casino_id"].as<uint64_t>(), casino_id);
+    BOOST_REQUIRE_EQUAL(session["ses_seq"].as<uint64_t>(), 0);
+    BOOST_REQUIRE_EQUAL(session["player"].as<name>(), player_name);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(), 2); // req_action state
+    BOOST_REQUIRE_EQUAL(session["deposit"].as<asset>(), player_bet);
+}
+FC_LOG_AND_RETHROW()
+
+// BOOST_FIXTURE_TEST_CASE(full_session_success_token_test, stub_tester) try {
+//     auto player_name = N(player);
+
+//     create_player(player_name);
+//     link_game(player_name, game_name);
+
+//     symbol kek_symbol = symbol{string_to_symbol_c(5, "KEK")};
+//     allow_token("KEK", 5, N(token.kek));
+
+//     transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
+//     transfer(N(eosio), casino_name, ASSET("1000.00000 KEK"));
+
+//     auto casino_balance_before = get_balance(casino_name);
+//     auto player_balance_before = get_balance(player_name);
+
+//     auto player_bet = ASSET("5.00000 KEK");
+//     auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+
+//     BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
+
+//     game_action(game_name, ses_id, 0, {0});
+
+//     auto session = get_game_session(game_name, ses_id);
+//     BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(), 3); // req_signidice_part_1 state
+
+//     signidice(game_name, ses_id);
+
+//     auto casino_balance_after = get_balance(casino_name);
+//     auto player_balance_after = get_balance(player_name);
+
+//     session = get_game_session(game_name, ses_id);
+//     BOOST_REQUIRE_EQUAL(session.is_null(), true);
+//     BOOST_REQUIRE_EQUAL(player_balance_before - player_bet, player_balance_after);
+//     BOOST_REQUIRE_EQUAL(casino_balance_before + player_bet, casino_balance_after);
+// }
+// FC_LOG_AND_RETHROW()
+
+// BOOST_FIXTURE_TEST_CASE(session_expiration_token_test, stub_tester) try {
+//     auto player_name = N(player);
+
+//     create_player(player_name);
+//     link_game(player_name, game_name);
+
+//     symbol kek_symbol = symbol{string_to_symbol_c(5, "KEK")};
+//     allow_token("KEK", 5, N(token.kek));
+
+//     transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
+//     transfer(N(eosio), casino_name, ASSET("1000.00000 KEK"));
+
+//     auto player_balance_before = get_balance(player_name);
+//     auto casino_balance_before = get_balance(casino_name);
+
+//     auto player_bet = ASSET("5.00000 KEK");
+//     auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+
+//     BOOST_REQUIRE_EQUAL(get_balance(game_name), player_bet);
+
+//     // clang-format off
+//     BOOST_REQUIRE_EQUAL(
+//             push_action(
+//                 game_name,
+//                 N(close),
+//                 {platform_name, N(active)},
+//                 mvo()
+//                     ("req_id", ses_id)
+//             ), wasm_assert_msg("session isn't expired, only expired session can be closed"));
+//     // clang-format on
+
+//     produce_block(fc::seconds(game_session_ttl + 1));
+
+//     close_session(game_name, ses_id);
+
+//     auto session = get_game_session(game_name, ses_id);
+//     BOOST_REQUIRE_EQUAL(session.is_null(), true);
+
+//     auto player_balance_after = get_balance(player_name);
+//     auto casino_balance_after = get_balance(casino_name);
+
+//     BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after + player_bet);
+//     BOOST_REQUIRE_EQUAL(casino_balance_before, casino_balance_after - player_bet);
+// }
+// FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace testing
