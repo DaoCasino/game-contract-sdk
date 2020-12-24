@@ -282,8 +282,8 @@ BOOST_FIXTURE_TEST_CASE(session_exiration_test, proto_dice_tester) try {
     auto player_balance_after = get_balance(player_name);
     auto casino_balance_after = get_balance(casino_name);
 
-    BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after + player_bet);
-    BOOST_REQUIRE_EQUAL(casino_balance_before, casino_balance_after - player_bet);
+    BOOST_REQUIRE_EQUAL(player_balance_before, player_balance_after);
+    BOOST_REQUIRE_EQUAL(casino_balance_before, casino_balance_after);
 }
 FC_LOG_AND_RETHROW()
 
