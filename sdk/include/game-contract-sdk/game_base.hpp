@@ -197,6 +197,11 @@ class game : public eosio::contract {
         return itr == session.params.end() ? std::nullopt : std::optional<param_t>{itr->second};
     }
 
+    const symbol get_session_symbol(uint64_t ses_id) const {
+        const auto& session = get_session(ses_id);
+        return token::get_symbol(get_platform(), session.token);
+    }
+
     // =============================================================
     // PRNG
     // =============================================================
