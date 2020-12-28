@@ -362,15 +362,13 @@ class game : public eosio::contract {
         eosio::check(get_token_contract(quantity) == get_first_receiver(), "transfer from incorrect contract");
         const auto& token = quantity.symbol.code().to_string();
         platform::read::verify_token(platform, token);
-
-        eosio::check(quantity.symbol == token::get_symbol(platform, token), "invalid token symbol");
-
         const auto ses_id = get_ses_id(memo);
-
+        eosio::check(quantity.symbol == token::get_symbol(get_platform(), token), "invalid deposit symbol");
         if (sessions.find(ses_id) == sessions.end()) {
             check_active_game();
             create_session(ses_id, from, quantity);
         } else {
+            eosio::check(get_session(ses_id).token == token, "invalid token symbol");
             verify_token_casino(quantity, get_session(ses_id).casino_id);
             handle_extra_deposit(get_session(ses_id), from, quantity);
         }

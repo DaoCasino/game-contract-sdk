@@ -385,7 +385,7 @@ class game_tester : public TESTER {
 
         if (real.get_amount() > 0) {
             BOOST_REQUIRE_EQUAL(
-                push_action(N(eosio.token),
+                push_action(get_token_contract(real.get_symbol()),
                             N(transfer),
                             player,
                             mvo()("from", player)("to", game_name)("quantity", real)("memo", std::to_string(ses_id))),
