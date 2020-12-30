@@ -358,10 +358,8 @@ class game : public eosio::contract {
         }
 
         // token verifying
-        const auto platform = get_platform();
         eosio::check(get_token_contract(quantity) == get_first_receiver(), "transfer from incorrect contract");
         const auto& token = quantity.symbol.code().to_string();
-        platform::read::verify_token(platform, token);
         const auto ses_id = get_ses_id(memo);
         eosio::check(quantity.symbol == token::get_symbol(get_platform(), token), "invalid deposit symbol");
         if (sessions.find(ses_id) == sessions.end()) {
