@@ -132,8 +132,9 @@ class game : public eosio::contract {
                                  //    transfer, newgamebon and depositbon actions
         asset bonus_deposit;     // <- player's bonus deposit
         checksum256 digest;      // <- signidice result, set seed value on new_game
-        time_point last_update;  // <-- last action time
+        time_point last_update;  // <- last action time
         asset last_max_win;      // <- last max win value, updated after on_action
+        bool acted;              // <- player first action flag
 
         uint64_t primary_key() const { return ses_id; }
     };
@@ -433,8 +434,11 @@ class game : public eosio::contract {
         sessions.modify(session, get_self(), [&](auto& obj) {
             obj.last_update = eosio::current_time_point();
             obj.state = static_cast<uint8_t>(state::req_action);
+            if (!obj.acted) {
+                obj.acted = true;
+            }
         });
-
+    
         on_action(ses_id, type, params);
     }
 
@@ -525,7 +529,13 @@ class game : public eosio::contract {
             // transfer deposit to player
             handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
             break;
-
+        /* if player haven't made first action just refund depsit */
+        case state::req_action:
+        case state::req_allow_deposit:
+            if (!session.acted) {
+                handle_player_loss_or_tie(session, session.deposit, "refund [session expired]");
+                break;
+            }
         /* in other cases we assume that player lost */
         default:
             player_win = -session.deposit;
