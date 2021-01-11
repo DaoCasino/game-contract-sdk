@@ -140,6 +140,31 @@ BOOST_FIXTURE_TEST_CASE(new_session_affl_test, stub_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE(new_session_token_test, stub_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    symbol kek_symbol = symbol{string_to_symbol_c(5, "KEK")};
+    allow_token("KEK", 5, N(token.kek));
+
+    transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
+
+    auto player_bet = ASSET("5.00000 KEK");
+    auto ses_id = new_game_session(game_name, player_name, casino_id, player_bet);
+    auto session = get_game_session(game_name, ses_id);
+
+    BOOST_REQUIRE_EQUAL(session["req_id"].as<uint64_t>(), ses_id);
+    BOOST_REQUIRE_EQUAL(session["casino_id"].as<uint64_t>(), casino_id);
+    BOOST_REQUIRE_EQUAL(session["ses_seq"].as<uint64_t>(), 0);
+    BOOST_REQUIRE_EQUAL(session["player"].as<name>(), player_name);
+    BOOST_REQUIRE_EQUAL(session["state"].as<uint32_t>(), 2); // req_action state
+    BOOST_REQUIRE_EQUAL(session["deposit"].as<asset>(), player_bet);
+}
+FC_LOG_AND_RETHROW()
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace testing

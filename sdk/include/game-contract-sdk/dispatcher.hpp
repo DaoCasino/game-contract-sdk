@@ -67,7 +67,7 @@ bool execute_action(eosio::name self, eosio::name code, void (T::*func)(Args...)
 #define GAME_CONTRACT_CUSTOM_ACTIONS(TYPE, MEMBERS)                                                                    \
     extern "C" {                                                                                                       \
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {                                                    \
-        if (code == "eosio.token"_n.value && action == "transfer"_n.value) {                                           \
+        if (action == "transfer"_n.value) {                                           \
             game_sdk::execute_action<TYPE>(eosio::name(receiver), eosio::name(code), &TYPE::on_transfer);              \
         } else if (code == receiver) {                                                                                 \
             switch (action) {                                                                                          \

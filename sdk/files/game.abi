@@ -189,6 +189,10 @@
                     "type": "game_params_type"
                 },
                 {
+                    "name": "token",
+                    "type": "string"
+                },
+                {
                     "name": "deposit",
                     "type": "asset"
                 },
