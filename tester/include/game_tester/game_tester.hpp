@@ -579,6 +579,14 @@ class game_tester : public TESTER {
             : abi_ser.at(platform_name).binary_to_variant("token_row", data, abi_serializer_max_time)["contract"].as<name>();
     }
 
+    game_params_type extract_game_params(const fc::variant& data) {
+        game_params_type params = {};
+        for (auto& pair: data.as<vector<fc::variant>>()) {
+            params.push_back({pair["first"].as<uint16_t>(), pair["second"].as<uint64_t>()});
+        }
+        return params;
+    }
+
   private:
     const abi_def& get_events_abi(const events_id event_type) {
         if (_lazy_abi_events.find(event_type) != _lazy_abi_events.end()) {
@@ -693,3 +701,12 @@ boost::unit_test::test_suite* init_unit_test_suite(int argc, char* argv[]) {
 
     return nullptr;
 }
+
+namespace std {
+    std::ostream& operator<<(std::ostream& os, const game_params_type& params) {
+        for (auto pair: params) {
+            os << pair.first << ":" << pair.second << " ";
+        }
+        return os;
+    }
+} 

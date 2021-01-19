@@ -2,6 +2,7 @@
 #include <game_tester/strategy.hpp>
 
 #include "contracts.hpp"
+#include <iostream>
 
 namespace testing {
 
@@ -15,10 +16,21 @@ class win_raise_lose_tester : public game_tester {
         create_account(game_name);
 
         game_params_type game_params = {};
+        game_params_type game_params_kek = {{0, 1}};
 
-        deploy_game<win_raise_lose_game>(game_name, game_params);
-        
-        allow_token("KEK", 5, N(token.kek));
+        const auto game_id = deploy_game<win_raise_lose_game>(game_name, game_params);
+        const auto& token = "KEK";
+        allow_token(token, 5, N(token.kek));
+
+        BOOST_REQUIRE_EQUAL(
+            push_action(
+                casino_name, 
+                N(setgameparam2), 
+                {casino_name, N(active)}, 
+                mvo()("game_id", game_id)("token", token)("params", game_params_kek)
+            ),
+            success()
+        );
     }
 };
 
@@ -238,6 +250,52 @@ BOOST_FIXTURE_TEST_CASE(unallowed_token_test, win_raise_lose_tester) try {
         transfer(player_name, game_name, ASSET("5.0000 LUL"), "10"),
         wasm_assert_msg("token is not supported")
     );
+}
+FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE(game_params_test, win_raise_lose_tester) try {
+    auto player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
+    auto ses_id = new_game_session(game_name, player_name, casino_id, ASSET("5.00000 KEK"));
+    const auto& session = get_game_session(game_name, ses_id);
+    const auto& params = extract_game_params(session["params"]);
+    const game_params_type expected_params = {{0, 1}};
+    BOOST_REQUIRE_EQUAL(params, expected_params);
+    
+    transfer(N(eosio), player_name, ASSET("10.0000 BET"));
+    ses_id = new_game_session(game_name, player_name, casino_id, ASSET("5.0000 BET"));
+    const auto& session_bet = get_game_session(game_name, ses_id);
+    const auto& params_bet = extract_game_params(session_bet["params"]);
+    const game_params_type expected_params_bet = {};
+    BOOST_REQUIRE_EQUAL(params_bet, expected_params_bet);
+
+    const auto token_lul = "LUL";
+    allow_token(token_lul, 3, N(token.lul));
+    const game_params_type expected_params_lul = {{0, 1}, {1, 1}};
+
+    transfer(N(eosio), player_name, ASSET("10.000 LUL"));
+    new_game_session(
+        game_name, player_name, casino_id, 
+        ASSET("5.000 LUL"), wasm_assert_msg("token is not allowed for this game")
+    );
+
+    BOOST_REQUIRE_EQUAL(
+        success(),
+        push_action(casino_name, N(setgameparam2), casino_name, mvo()
+            ("game_id", 0)
+            ("token", token_lul)
+            ("params", expected_params_lul)
+        )
+    );
+
+    ses_id = new_game_session(game_name, player_name, casino_id, ASSET("5.000 LUL"));
+    const auto& session_lul = get_game_session(game_name, ses_id);
+    const auto& params_lul = extract_game_params(session_lul["params"]);
+    BOOST_REQUIRE_EQUAL(params_lul, expected_params_lul);
 }
 FC_LOG_AND_RETHROW()
 

@@ -146,8 +146,17 @@ BOOST_FIXTURE_TEST_CASE(new_session_token_test, stub_tester) try {
     create_player(player_name);
     link_game(player_name, game_name);
 
-    symbol kek_symbol = symbol{string_to_symbol_c(5, "KEK")};
-    allow_token("KEK", 5, N(token.kek));
+    const auto kek_token = "KEK";
+    symbol kek_symbol = symbol{string_to_symbol_c(5, kek_token)};
+    allow_token(kek_token, 5, N(token.kek));
+     BOOST_REQUIRE_EQUAL(
+        success(),
+        push_action(casino_name, N(setgameparam2), casino_name, mvo()
+            ("game_id", 0)
+            ("token", kek_token)
+            ("params", game_params_type{})
+        )
+    );
 
     transfer(N(eosio), player_name, ASSET("10.00000 KEK"));
 
