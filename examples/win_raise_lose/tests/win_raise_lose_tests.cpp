@@ -2,7 +2,6 @@
 #include <game_tester/strategy.hpp>
 
 #include "contracts.hpp"
-#include <iostream>
 
 namespace testing {
 
