@@ -676,9 +676,13 @@ class game : public eosio::contract {
     game_params_type fetch_game_params(const uint64_t casino_id) const {
         const auto& session = get_session(current_session);
         const auto casino = get_casino(casino_id);
-        casino::game_params_table game_params(casino, casino.value);
-        const auto& params_map = game_params.get(get_self_id(), "game is not in game params").params;
         const auto token_raw = platform::get_token_pk(session.token);
+        casino::game_params_table game_params(casino, casino.value);
+        if (game_params.find(get_self_id()) == game_params.end() && token_raw == core_symbol.code().raw()) {
+            casino::game_table casino_games(casino, casino.value);
+            return casino_games.get(get_self_id()).params;
+        }
+        const auto& params_map = game_params.get(get_self_id(), "game is not in game params").params;
         eosio::check(params_map.find(token_raw) != params_map.end(), "token is not allowed for this game");
         return params_map.at(token_raw);
     }
