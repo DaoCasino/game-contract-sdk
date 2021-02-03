@@ -298,6 +298,42 @@ BOOST_FIXTURE_TEST_CASE(game_params_test, win_raise_lose_tester) try {
 }
 FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE(ban_test, win_raise_lose_tester) try {
+    const name player_name = N(player);
+
+    create_player(player_name);
+    link_game(player_name, game_name);
+
+    transfer(N(eosio), player_name, ASSET("15.00000 KEK"));
+    transfer(N(eosio), casino_name, ASSET("1000.00000 KEK"));
+
+    BOOST_REQUIRE_EQUAL(
+        success(),
+        transfer(player_name, game_name, ASSET("5.00000 KEK"), "0")
+    );
+
+    BOOST_REQUIRE_EQUAL(
+        success(),
+        push_action(platform_name, N(banplayer), platform_name, mvo()("player", player_name))
+    );
+
+    BOOST_REQUIRE_EQUAL(
+        wasm_assert_msg("player is banned"),
+        transfer(player_name, game_name, ASSET("5.00000 KEK"), "1")
+    );
+
+    BOOST_REQUIRE_EQUAL(
+        success(),
+        push_action(platform_name, N(unbanplayer), platform_name, mvo()("player", player_name))
+    );
+
+    BOOST_REQUIRE_EQUAL(
+        success(),
+        transfer(player_name, game_name, ASSET("5.00000 KEK"), "2")
+    );
+}
+FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace testing
