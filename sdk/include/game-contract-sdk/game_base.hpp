@@ -358,6 +358,8 @@ class game : public eosio::contract {
             return;
         }
 
+        check_player_not_banned(from);
+        
         // token verifying
         eosio::check(get_token_contract(quantity) == get_first_receiver(), "transfer from incorrect contract");
         const auto& token = quantity.symbol.code().to_string();
@@ -873,6 +875,12 @@ class game : public eosio::contract {
         casino::token_table tokens(casino, casino.value);
         auto it = tokens.require_find(amount.symbol.code().raw(), "token is not in the list");
         eosio::check(!it->paused, "token is paused");
+    }
+
+    void check_player_not_banned(const name player) const {
+        const auto platform = get_platform();
+        platform::ban_list_table ban_list(platform, platform.value);
+        eosio::check(ban_list.find(player.value) == ban_list.end(), "player is banned");
     }
 
 #ifdef IS_DEBUG
